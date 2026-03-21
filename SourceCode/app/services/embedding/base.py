@@ -1,10 +1,15 @@
-class BaseEmbeddingService:
+from abc import ABC, abstractmethod
+class BaseEmbeddingService(ABC):
     def __init__(self, embedding_model):
         self.embedding_model = embedding_model
 
+    @abstractmethod
     def get_name(self):
-        return self.embedding_model.__class__.__name__
+        pass
+    
+    @abstractmethod
     def embed(self, text):
-        raise NotImplementedError("Subclasses must implement the embed method.")
+        pass
+    @abstractmethod
     def embed_batch(self, texts):
-        raise NotImplementedError("Subclasses must implement the embed_batch method.")
+        pass

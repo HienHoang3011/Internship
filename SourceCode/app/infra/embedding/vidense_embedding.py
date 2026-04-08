@@ -1,6 +1,6 @@
 import torch
 from transformers import AutoModel, AutoTokenizer
-from app.services.embedding.base import BaseEmbeddingService 
+from app.infra.embedding.base import BaseEmbeddingService 
 
 class VidenseEmbedding(BaseEmbeddingService):
     def __init__(self):

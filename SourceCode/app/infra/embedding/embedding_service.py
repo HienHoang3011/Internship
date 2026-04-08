@@ -1,6 +1,6 @@
-from app.services.embedding.base import BaseEmbeddingService
-from app.services.embedding.gemini_embedding import GeminiEmbeddingService
-from app.services.embedding.vidense_embedding import VidenseEmbedding
+from app.infra.embedding.base import BaseEmbeddingService
+from app.infra.embedding.gemini_embedding import GeminiEmbeddingService
+from app.infra.embedding.vidense_embedding import VidenseEmbedding
 
 class EmbeddingService(BaseEmbeddingService):
     def __init__(self, provider: str = "gemini"):

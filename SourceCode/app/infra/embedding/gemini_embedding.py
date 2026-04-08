@@ -1,4 +1,4 @@
-from app.services.embedding.embedding_service import BaseEmbeddingService
+from app.infra.embedding.base import BaseEmbeddingService
 from google import genai
 import os
 from dotenv import load_dotenv

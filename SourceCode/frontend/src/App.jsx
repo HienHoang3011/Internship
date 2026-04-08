@@ -4,6 +4,14 @@ import './App.css';
 function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'chat' | 'login' | 'register'
 
+  // Auth State
+  const [authUsername, setAuthUsername] = useState('');
+  const [authFullName, setAuthFullName] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authConfirmPassword, setAuthConfirmPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+
   // Chat State
   const [sessions, setSessions] = useState([
     {
@@ -21,42 +29,76 @@ function App() {
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    const newUserMsg = { id: Date.now(), text: inputValue, sender: 'user' };
+    const currentInput = inputValue;
+    const newUserMsg = { id: Date.now(), text: currentInput, sender: 'user' };
+    const botLoadingId = Date.now() + 1;
 
-    // Update active session messages
+    // Lấy context hiện tại của cuộc hội thoại
+    const currentSession = sessions.find(s => s.id === activeSessionId);
+    let newTitle = currentSession.title;
+    if (currentSession.messages.length === 1 && newTitle.includes("Cuộc trò chuyện mới")) {
+      newTitle = currentInput.length > 20 ? currentInput.substring(0, 20) + '...' : currentInput;
+    }
+
+    // Update UI ngay lập tức với câu hỏi của User và một trạng thái Loading của Bot
     setSessions(prevSessions => prevSessions.map(session => {
       if (session.id === activeSessionId) {
-        return { ...session, messages: [...session.messages, newUserMsg] };
+        return { 
+          ...session, 
+          title: newTitle, 
+          messages: [...session.messages, newUserMsg, { id: botLoadingId, text: "Đang phân tích...", sender: 'bot', isLoading: true }] 
+        };
       }
       return session;
     }));
 
     setInputValue('');
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse = {
-        id: Date.now() + 1,
-        text: "Mình hiểu những gì bạn đang trải qua. Bạn có thể kể thêm chi tiết hơn để mình hiểu trọn vẹn cảm xúc của bạn lúc này không?",
-        sender: 'bot'
-      };
+    try {
+      // Map về format API LLM yêu cầu (Langchain BaseMessage dictionary)
+      const apiMessages = currentSession.messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
+      // Thêm câu hỏi hiện tại
+      apiMessages.push({ role: 'user', content: currentInput });
 
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages })
+      });
+
+      const data = await response.json();
+      const botText = data.response || "Đã xảy ra lỗi từ phía hệ thống.";
+
+      // Replace tin nhắn Loading bằng kết quả thật
       setSessions(prevSessions => prevSessions.map(session => {
         if (session.id === activeSessionId) {
-          // If title is default, update it based on user's first query
-          let newTitle = session.title;
-          if (session.messages.length === 1 && newTitle.includes("Cuộc trò chuyện mới")) {
-            newTitle = inputValue.length > 20 ? inputValue.substring(0, 20) + '...' : inputValue;
-          }
-          return { ...session, title: newTitle, messages: [...session.messages, botResponse] };
+          const updatedMessages = session.messages.map(m => 
+            m.id === botLoadingId ? { ...m, text: botText, isLoading: false, metadata: data.metadata } : m
+          );
+          return { ...session, messages: updatedMessages };
         }
         return session;
       }));
-    }, 1200);
+
+    } catch (error) {
+      console.error("Lỗi gọi Chat API:", error);
+      setSessions(prevSessions => prevSessions.map(session => {
+        if (session.id === activeSessionId) {
+          const updatedMessages = session.messages.map(m => 
+            m.id === botLoadingId ? { ...m, text: "Mất kết nối với máy chủ AI. Vui lòng thử lại sau.", isLoading: false } : m
+          );
+          return { ...session, messages: updatedMessages };
+        }
+        return session;
+      }));
+    }
   };
 
   const handleNewChat = () => {
@@ -76,6 +118,62 @@ function App() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [sessions, activeSessionId, currentView]);
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (currentView === 'register') {
+      if (authPassword !== authConfirmPassword) {
+        setAuthError('Mật khẩu xác nhận không khớp.');
+        return;
+      }
+      try {
+        const res = await fetch("http://localhost:8000/api/auth/register/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: authUsername,
+            email: authEmail,
+            password: authPassword,
+            full_name: authFullName
+          })
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          setAuthError(JSON.stringify(errData));
+          return;
+        }
+        alert("Đăng ký thành công! Vui lòng đăng nhập.");
+        setCurrentView('login');
+      } catch (err) {
+        setAuthError('Lỗi kết nối đến máy chủ.');
+      }
+    } else {
+      // Login
+      try {
+        const res = await fetch("http://localhost:8000/api/auth/login/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: authEmail, password: authPassword })
+        });
+        if (!res.ok) {
+          setAuthError('Tài khoản hoặc mật khẩu không chính xác.');
+          return;
+        }
+        const data = await res.json();
+        localStorage.setItem("accessToken", data.access);
+        localStorage.setItem("refreshToken", data.refresh);
+        setCurrentView('chat');
+      } catch (err) {
+        setAuthError('Lỗi kết nối đến máy chủ.');
+      }
+    }
+  };
+
+  const switchAuthMode = (mode) => {
+    setAuthError('');
+    setCurrentView(mode);
+  };
 
   return (
     <div className="app-container">
@@ -148,25 +246,32 @@ function App() {
               {currentView === 'login' ? 'Chào mừng bạn quay trở lại với MindCareAI' : 'Bắt đầu hành trình chăm sóc sức khỏe tinh thần cùng chúng tôi'}
             </p>
 
-            <form className="auth-form" onSubmit={(e) => { e.preventDefault(); setCurrentView('chat'); }}>
+            {authError && <div style={{ color: 'red', marginBottom: '10px', fontSize: '0.9rem' }}>{authError}</div>}
+            <form className="auth-form" onSubmit={handleAuthSubmit}>
               {currentView === 'register' && (
-                <div className="form-group">
-                  <label>Họ và tên</label>
-                  <input type="text" placeholder="Nguyễn Văn A" required />
-                </div>
+                <>
+                  <div className="form-group">
+                    <label>Tên người dùng (Username)</label>
+                    <input type="text" placeholder="nguyenvana123" value={authUsername} onChange={e => setAuthUsername(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Họ và tên</label>
+                    <input type="text" placeholder="Nguyễn Văn A" value={authFullName} onChange={e => setAuthFullName(e.target.value)} required />
+                  </div>
+                </>
               )}
               <div className="form-group">
                 <label>Email</label>
-                <input type="email" placeholder="email@example.com" required />
+                <input type="email" placeholder="email@example.com" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required />
               </div>
               <div className="form-group">
                 <label>Mật khẩu</label>
-                <input type="password" placeholder="••••••••" required />
+                <input type="password" placeholder="••••••••" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required />
               </div>
               {currentView === 'register' && (
                 <div className="form-group">
                   <label>Xác nhận mật khẩu</label>
-                  <input type="password" placeholder="••••••••" required />
+                  <input type="password" placeholder="••••••••" value={authConfirmPassword} onChange={e => setAuthConfirmPassword(e.target.value)} required />
                 </div>
               )}
 
@@ -177,9 +282,9 @@ function App() {
 
             <div className="auth-switch">
               {currentView === 'login' ? (
-                <p>Chưa có tài khoản? <button onClick={() => setCurrentView('register')} className="auth-link">Đăng ký ngay</button></p>
+                <p>Chưa có tài khoản? <button type="button" onClick={() => switchAuthMode('register')} className="auth-link">Đăng ký ngay</button></p>
               ) : (
-                <p>Đã có tài khoản? <button onClick={() => setCurrentView('login')} className="auth-link">Đăng nhập</button></p>
+                <p>Đã có tài khoản? <button type="button" onClick={() => switchAuthMode('login')} className="auth-link">Đăng nhập</button></p>
               )}
             </div>
 

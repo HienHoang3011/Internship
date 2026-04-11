@@ -1,6 +1,6 @@
 from app.agents.dependencies.llm_service import llm_with_tool
 from app.agents.graph.stage import AgentState
-from langchain_core.messages import SystemMessage
+from langchain.messages import SystemMessage
 
 def empathy_node(state: AgentState):
     prompt = """

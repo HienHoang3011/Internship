@@ -1,7 +1,7 @@
 from app.agents.dependencies.llm_service import llm_with_tool
 from app.agents.graph.stage import AgentState
 from app.agents.tools.db_search import search_knowledge_base
-from langchain_core.messages import SystemMessage
+from langchain.messages import SystemMessage
 
 def psychoeducation_node(state: AgentState):
     # Lấy tin nhắn cuối cùng của người dùng

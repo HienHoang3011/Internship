@@ -11,7 +11,6 @@ class EmbeddingService(BaseEmbeddingService):
         self.client = self._initialize_provider()
 
     def _initialize_provider(self):
-        # Khởi tạo class con tương ứng với provider
         if self.provider_name == "gemini":
             return GeminiEmbeddingService()
         elif self.provider_name == "vidense":

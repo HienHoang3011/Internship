@@ -1,7 +1,7 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from app.infra.embedding.embedding_service import EmbeddingService
-import numpy as np
+import numpy as np  
 import re
  
 def _get_markdown_header_string(metadata):

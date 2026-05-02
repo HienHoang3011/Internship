@@ -64,8 +64,7 @@ def search_knowledge_base(
                     "_id": 0,       
                     "uuid": 0,      
                     "headers": 1,   
-                    "content": 1,   
-                    "summary": 1    
+                    "content": 1 
                 }
             }
         ]

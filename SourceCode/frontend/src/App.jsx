@@ -47,10 +47,10 @@ function App() {
     // Update UI ngay lập tức với câu hỏi của User và một trạng thái Loading của Bot
     setSessions(prevSessions => prevSessions.map(session => {
       if (session.id === activeSessionId) {
-        return { 
-          ...session, 
-          title: newTitle, 
-          messages: [...session.messages, newUserMsg, { id: botLoadingId, text: "Đang phân tích...", sender: 'bot', isLoading: true }] 
+        return {
+          ...session,
+          title: newTitle,
+          messages: [...session.messages, newUserMsg, { id: botLoadingId, text: "Đang phân tích...", sender: 'bot', isLoading: true }]
         };
       }
       return session;
@@ -67,7 +67,7 @@ function App() {
       // Thêm câu hỏi hiện tại
       apiMessages.push({ role: 'user', content: currentInput });
 
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await fetch("http://localhost:8001/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: apiMessages })
@@ -79,7 +79,7 @@ function App() {
       // Replace tin nhắn Loading bằng kết quả thật
       setSessions(prevSessions => prevSessions.map(session => {
         if (session.id === activeSessionId) {
-          const updatedMessages = session.messages.map(m => 
+          const updatedMessages = session.messages.map(m =>
             m.id === botLoadingId ? { ...m, text: botText, isLoading: false, metadata: data.metadata } : m
           );
           return { ...session, messages: updatedMessages };
@@ -91,7 +91,7 @@ function App() {
       console.error("Lỗi gọi Chat API:", error);
       setSessions(prevSessions => prevSessions.map(session => {
         if (session.id === activeSessionId) {
-          const updatedMessages = session.messages.map(m => 
+          const updatedMessages = session.messages.map(m =>
             m.id === botLoadingId ? { ...m, text: "Mất kết nối với máy chủ AI. Vui lòng thử lại sau.", isLoading: false } : m
           );
           return { ...session, messages: updatedMessages };

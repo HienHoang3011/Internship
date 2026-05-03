@@ -24,11 +24,11 @@ class MongoDBService:
         self.db: Optional[Database] = None
         
         try:
-            mongo_uri = os.getenv("MONGODB_URI")
+            mongo_uri = os.getenv("MONGODB_URL")
             db_name = os.getenv("MONGODB_DATABASE")
             
             if not mongo_uri or not db_name:
-                logger.warning("Vui lòng thiết lập MONGODB_URI và MONGODB_DATABASE trong file .env.")
+                logger.warning("Vui lòng thiết lập MONGODB_URL và MONGODB_DATABASE trong file .env.")
                 return
 
             self.client = MongoClient(mongo_uri)

@@ -222,17 +222,31 @@ def main():
     base_url = os.getenv("GPT_OSS_20B_BASE_URL", "http://localhost:5000/v1")
     dummy_key = "sk-dummy-key"  # API key giả để pass qua thư viện OpenAI
     
-    # Khởi tạo LLM và Embeddings trỏ trực tiếp về Open Source Model
-    evaluator_llm = ChatOpenAI(
-        model="gpt-3.5-turbo", # Tên model không quan trọng với local server
-        base_url=base_url,
-        api_key=dummy_key,
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.embeddings import Embeddings
+    from app.infra.embedding.embedding_service import EmbeddingService
+
+    # 1. Class Wrapper để bọc Service của bạn thành chuẩn của LangChain (Ragas yêu cầu)
+    class CustomEmbeddingsWrapper(Embeddings):
+        def __init__(self, service: EmbeddingService):
+            self.service = service
+            
+        def embed_documents(self, texts: list[str]) -> list[list[float]]:
+            return self.service.embed_batch(texts)
+            
+        def embed_query(self, text: str) -> list[float]:
+            return self.service.embed_query(text)
+
+    # 2. Khởi tạo Evaluator LLM dùng Gemini
+    evaluator_llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=os.getenv("GOOGLE_API_KEY")
     )
-    evaluator_embeddings = OpenAIEmbeddings(
-        model="text-embedding-ada-002",
-        base_url=base_url,
-        api_key=dummy_key,
-    )
+    
+    # 3. Sử dụng chính Embedding Service của dự án
+    my_embedding_service = EmbeddingService(provider="gemini")
+    evaluator_embeddings = CustomEmbeddingsWrapper(my_embedding_service)
+    from ragas.run_config import RunConfig
     
     # Chạy đánh giá với LLM tự host
     results = evaluate(
@@ -240,6 +254,7 @@ def main():
         metrics=metrics,
         llm=evaluator_llm,
         embeddings=evaluator_embeddings,
+        run_config=RunConfig(max_workers=2, timeout=180) # Giới hạn 2 luồng để tránh Timeout/Rate Limit
     )
     
     print("\n=== KẾT QUẢ ĐÁNH GIÁ ===")

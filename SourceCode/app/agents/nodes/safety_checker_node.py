@@ -3,7 +3,8 @@ from app.agents.graph.stage import AgentState
 
 def safety_checker_node(state: AgentState):
     last_user_msg = next(
-        msg["content"] for msg in reversed(state["messages"]) if msg["role"] == "user"
+        (msg.content for msg in reversed(state["messages"]) if getattr(msg, "type", "") == "human" or isinstance(msg, dict) and msg.get("role") == "user"),
+        ""
     )
     prompt = f"""
     Bạn là một AI chuyên phân loại an toàn nội dung, có nhiệm vụ phát hiện ý định nguy hiểm trong tin nhắn người dùng.

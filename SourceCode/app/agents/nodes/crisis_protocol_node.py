@@ -3,7 +3,8 @@ from app.agents.dependencies.llm_service import llm_with_tool
 
 def crisis_protocol_node(state: AgentState):
     last_user_msg = next(
-        msg["content"] for msg in reversed(state["messages"]) if msg["role"] == "user"
+        (msg.content for msg in reversed(state["messages"]) if getattr(msg, "type", "") == "human" or isinstance(msg, dict) and msg.get("role") == "user"),
+        ""
     )
     prompt = f"""
     Bạn là một AI hỗ trợ an toàn, có nhiệm vụ phản hồi một cách cảm thông và nhẹ nhàng khi phát hiện người dùng có dấu hiệu tự hại, tự tử hoặc bạo lực.

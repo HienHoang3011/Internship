@@ -3,7 +3,8 @@ from app.agents.dependencies.llm_service import llm_service
 
 def message_classification_node(state: AgentState):
     last_usr_message = next(
-        msg["content"] for msg in reversed(state["messages"]) if msg["role"] == "user"
+        (msg.content for msg in reversed(state["messages"]) if getattr(msg, "type", "") == "human" or isinstance(msg, dict) and msg.get("role") == "user"),
+        ""
     )
     prompt = f"""
     Bạn là một AI phân loại nội dung, có nhiệm vụ xác định mức độ chuyên sâu về tâm lý học trong tin nhắn của người dùng.

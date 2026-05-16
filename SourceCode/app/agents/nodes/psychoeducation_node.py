@@ -6,7 +6,8 @@ from langchain.messages import SystemMessage
 def psychoeducation_node(state: AgentState):
     # Lấy tin nhắn cuối cùng của người dùng
     last_user_msg = next(
-        msg["content"] for msg in reversed(state["messages"]) if msg["role"] == "user"
+        (msg.content for msg in reversed(state["messages"]) if getattr(msg, "type", "") == "human" or isinstance(msg, dict) and msg.get("role") == "user"),
+        ""
     )
     
     # Chủ động gọi Knowledge Base Search tool để nhồi vào prompt (RAG)

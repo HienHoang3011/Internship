@@ -254,7 +254,7 @@ def main():
         metrics=metrics,
         llm=evaluator_llm,
         embeddings=evaluator_embeddings,
-        run_config=RunConfig(max_workers=2, timeout=180) # Giới hạn 2 luồng để tránh Timeout/Rate Limit
+        run_config=RunConfig(max_workers=1, timeout=600, max_retries=10) # Chạy từng luồng 1 và cho phép chờ 10 phút mỗi job để Gemini không bị timeout
     )
     
     print("\n=== KẾT QUẢ ĐÁNH GIÁ ===")

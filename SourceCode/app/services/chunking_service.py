@@ -48,21 +48,6 @@ class ChunkingService:
         return split_text
     
     def split_markdown(self, text):
-        """
-        Chia văn bản markdown thành các phần dựa trên các header #, ##, ###,...
-        Nếu một phần quá ngắn, gộp vào chunk trước đó.
-        Sau đó, chia nhỏ các phần còn lại bằng RecursiveCharacterTextSplitter với separators '\n\n' và '\n'.
-        Nếu một phần sau khi chia vẫn quá dài, chia nhỏ nó ra tiếp.
-        Thêm header vào đầu mỗi semantic chunk.
-
-        Args:
-            text (str): Chuỗi markdown cần chia.
-
-        Returns:
-            list[str]: Một danh sách các chuỗi văn bản đã được chia tách.
-        """
-        # Remove only the first H1 block (header level '#') then use
-        # MarkdownHeaderTextSplitter for the rest.
         if not text:
             return []
 
@@ -82,14 +67,21 @@ class ChunkingService:
         if h1_indices:
             first_i = h1_indices[0]
             start = matches[first_i].start()
-            # keep leading content before first H1
-            leading = text[:start]
+            
+            # Tìm thẻ heading tiếp theo (##, ###, ####, v.v.)
             next_start = None
-            for j in range(first_i + 1, len(matches)):
-                if len(matches[j].group(1)) == 1:
-                    next_start = matches[j].start()
-                    break
-            rest = text[next_start:] if next_start is not None else ""
+            if first_i + 1 < len(matches):
+                next_start = matches[first_i + 1].start()
+                
+            leading = text[:start]
+            
+            if next_start is not None:
+                rest = text[next_start:]
+            else:
+                # Nếu file không có thẻ heading nào khác, chỉ xóa dòng H1 để tránh mất toàn bộ dữ liệu
+                end = matches[first_i].end()
+                rest = text[end:]
+                
             text = (leading + "\n" + rest).strip()
 
         # Use the MarkdownHeaderTextSplitter for the pruned text

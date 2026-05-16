@@ -1,6 +1,7 @@
 import os
 import sys
 import uuid
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -28,6 +29,36 @@ def extract_headers_and_content(chunk_str):
     
     return headers, content
 
+def remove_table_of_contents(text):
+    """
+    Loại bỏ phần mục lục (nếu có) khỏi văn bản.
+    Nhận diện bằng dòng "#### MỤC LỤC" và bỏ qua các dòng list item hoặc dòng trống tiếp theo.
+    """
+    lines = text.split('\n')
+    out_lines = []
+    in_toc = False
+    
+    for line in lines:
+        if not in_toc:
+            if line.strip().upper() == "#### MỤC LỤC":
+                in_toc = True
+                continue
+            out_lines.append(line)
+        else:
+            # Đang trong vùng mục lục
+            stripped = line.strip()
+            if not stripped:
+                continue # Bỏ qua dòng trống
+            # Kiểm tra xem có phải là list item không (bắt đầu bằng số. hoặc dấu -, *)
+            if re.match(r'^(\d+\.|-|\*)\s', stripped):
+                continue
+            
+            # Đã hết mục lục, đây là dòng nội dung bình thường đầu tiên
+            in_toc = False
+            out_lines.append(line)
+            
+    return '\n'.join(out_lines)
+
 def handle_data(file_path, chunking_service, embedding_service):
     """
     Xử lý một file:
@@ -42,6 +73,9 @@ def handle_data(file_path, chunking_service, embedding_service):
     except Exception as e:
         print(f"Lỗi khi đọc file {file_path}: {e}")
         return []
+    
+    # 0. Loại bỏ phần mục lục
+    text = remove_table_of_contents(text)
     
     # 1. Làm sạch dữ liệu
     cleaned_text = clean_text(text)

@@ -71,19 +71,37 @@ class TestAnalyzeView(APIView):
             for dim, score in test_result.raw_result.items():
                 context += f"- {dim}: {score}\n"
                 
-        prompt = f"""
-        Bạn là một chuyên gia tâm lý học. Dựa vào kết quả dưới đây của người dùng trong bài kiểm tra "{test.name}", hãy phân tích tính cách hoặc tình trạng tâm lý của họ một cách nhẹ nhàng, khoa học và thấu cảm.
-        
-        Nếu bài kiểm tra là DASS-21, hãy đối chiếu tổng điểm của họ với bảng phân loại lâm sàng (lưu ý điểm đã được nhân 2):
-        - Trầm cảm: Bình thường (0-9), Nhẹ (10-13), Vừa (14-20), Nặng (21-27), Rất nặng (28+).
-        - Lo âu: Bình thường (0-7), Nhẹ (8-9), Vừa (10-14), Nặng (15-19), Rất nặng (20+).
-        - Stress: Bình thường (0-14), Nhẹ (15-18), Vừa (19-25), Nặng (26-33), Rất nặng (34+).
-        
-        Dữ liệu kết quả:
-        {context}
-        
-        Vui lòng đưa ra nhận xét chi tiết, chỉ rõ mức độ cho từng khía cạnh và đưa ra lời khuyên hữu ích bằng tiếng Việt.
-        """
+        prompt = f"""Bạn là một chuyên gia tâm lý học lâm sàng. Nhiệm vụ của bạn là phân tích kết quả bài kiểm tra "{test.name}" của người dùng dựa trên dữ liệu được cung cấp.
+
+Yêu cầu về giọng văn: Nhẹ nhàng, thấu cảm, khoa học và đi thẳng vào vấn đề. Tuyệt đối không sử dụng các ví dụ ẩn dụ, văn vẻ rườm rà hay so sánh vòng vo. Hãy phân tích dựa trên sự thật và dữ liệu.
+
+Dữ liệu kết quả của người dùng:
+{context}
+
+Hướng dẫn phân tích chuyên môn:
+1. Nếu là DASS-21:
+Bắt buộc đối chiếu điểm số (đã nhân 2) với thang đo lâm sàng sau để kết luận chính xác mức độ:
+- Trầm cảm: Bình thường (0-9), Nhẹ (10-13), Vừa (14-20), Nặng (21-27), Rất nặng (28+).
+- Lo âu: Bình thường (0-7), Nhẹ (8-9), Vừa (10-14), Nặng (15-19), Rất nặng (20+).
+- Stress: Bình thường (0-14), Nhẹ (15-18), Vừa (19-25), Nặng (26-33), Rất nặng (34+).
+
+2. Nếu là các bài kiểm tra tính cách/tâm lý khác (Big Five, Kiểu gắn bó, Locus of Control, 5 Ngôn ngữ tình yêu...):
+Xác định các khía cạnh có điểm số cao nhất/thấp nhất để chỉ ra xu hướng tính cách chủ đạo.
+
+Cấu trúc câu trả lời bắt buộc (trình bày bằng tiếng Việt, sử dụng định dạng rõ ràng):
+
+### 1. Đánh giá tổng quan
+Tóm tắt ngắn gọn tình trạng tâm lý hoặc xu hướng tính cách nổi bật nhất của người dùng dựa trên kết quả. Xác nhận cảm xúc của họ một cách thấu cảm.
+
+### 2. Phân tích chi tiết từng khía cạnh
+Liệt kê từng khía cạnh/nhóm đo lường kèm theo mức độ hoặc điểm số cụ thể. Trình bày rõ ràng:
+- Chỉ số này thực tế có nghĩa là gì?
+- Biểu hiện tâm lý hoặc hành vi đặc trưng ở mức độ này là gì?
+
+### 3. Lời khuyên hành động
+Đưa ra 2-3 gợi ý thực tế, cụ thể, có thể áp dụng ngay vào đời sống để cải thiện tình trạng (nếu kết quả tiêu cực) hoặc phát huy thế mạnh (nếu kết quả tích cực). Không đưa ra lời khuyên chung chung kiểu "hãy suy nghĩ tích cực lên". 
+(Lưu ý: Nếu kết quả DASS-21 ở mức Nặng hoặc Rất nặng, bắt buộc phải có khuyến nghị tìm gặp bác sĩ tâm lý hoặc chuyên gia y tế).
+"""
         
         try:
             client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))

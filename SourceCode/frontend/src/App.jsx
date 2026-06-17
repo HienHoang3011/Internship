@@ -81,8 +81,17 @@ function App() {
         if (data.length === 0) {
           data = [{ id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] }];
         }
-        setSessions(data);
-        setActiveSessionId(data[0].id);
+        setSessions(prevSessions => {
+          const hasTemp = prevSessions.some(s => s.id === 'temp');
+          if (hasTemp) {
+            return [{ id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] }, ...data];
+          }
+          return data;
+        });
+        setActiveSessionId(prevId => {
+          if (prevId === 'temp') return 'temp';
+          return data[0].id;
+        });
         setIsChatLoaded(true);
       }
     } catch (err) {

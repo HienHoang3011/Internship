@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
+import { apiFetch } from '../utils/api';
 
 const AdminDashboard = ({ handleLogout }) => {
   const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' | 'tests'
@@ -18,28 +19,16 @@ const AdminDashboard = ({ handleLogout }) => {
 
   async function fetchLessons() {
     try {
-      const res = await fetch("http://localhost:8000/api/lessons/", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-        handleLogout();
-        return;
-      }
+      const res = await apiFetch("http://localhost:8000/api/lessons/");
+      if (res.status === 401) return;
       if (res.ok) setLessons(await res.json());
     } catch (err) { console.error(err); }
   }
 
   async function fetchTests() {
     try {
-      const res = await fetch("http://localhost:8000/api/tests/", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-        handleLogout();
-        return;
-      }
+      const res = await apiFetch("http://localhost:8000/api/tests/");
+      if (res.status === 401) return;
       if (res.ok) setTests(await res.json());
     } catch (err) { console.error(err); }
   }
@@ -55,9 +44,9 @@ const AdminDashboard = ({ handleLogout }) => {
     const url = isEdit ? `http://localhost:8000/api/lessons/${editingLessonId}/` : "http://localhost:8000/api/lessons/";
     const method = isEdit ? "PUT" : "POST";
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: method,
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lessonForm)
       });
       if (res.ok) {
@@ -80,9 +69,8 @@ const AdminDashboard = ({ handleLogout }) => {
   const handleDeleteLesson = async (id) => {
     if(!window.confirm("Xóa bài học này?")) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/lessons/${id}/`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+      const res = await apiFetch(`http://localhost:8000/api/lessons/${id}/`, {
+        method: "DELETE"
       });
       if(res.ok) fetchLessons();
     } catch (err) { console.error(err); }
@@ -107,9 +95,9 @@ const AdminDashboard = ({ handleLogout }) => {
     const url = isEdit ? `http://localhost:8000/api/tests/${editingTestId}/` : "http://localhost:8000/api/tests/";
     const method = isEdit ? "PUT" : "POST";
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: method,
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(testForm)
       });
       if (res.ok) {
@@ -132,9 +120,8 @@ const AdminDashboard = ({ handleLogout }) => {
   const handleDeleteTest = async (id) => {
     if(!window.confirm("Xóa bài test này?")) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/tests/${id}/`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+      const res = await apiFetch(`http://localhost:8000/api/tests/${id}/`, {
+        method: "DELETE"
       });
       if(res.ok) fetchTests();
     } catch (err) { console.error(err); }

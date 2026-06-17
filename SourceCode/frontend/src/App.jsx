@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { apiFetch } from './utils/api';
 import AdminDashboard from './components/AdminDashboard';
 import TestViewer from './components/TestViewer';
 import DiaryViewer from './components/DiaryViewer';
@@ -8,7 +9,8 @@ import AuthScreen from './components/AuthScreen';
 import HomeScreen from './components/HomeScreen';
 import ChatScreen from './components/ChatScreen';
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'chat' | 'login' | 'register' | 'diary'
+  const [currentView, setCurrentView] = useState('home');
+  const [currentId, setCurrentId] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUtilitiesOpen, setIsUtilitiesOpen] = useState(false);
 
@@ -25,16 +27,52 @@ function App() {
 
 
   useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        const parts = hash.split('/');
+        if (parts[0] === 'faq') {
+          setCurrentView('home');
+          setTimeout(() => {
+            document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        } else {
+          setCurrentView(parts[0]);
+          setCurrentId(parts.length > 1 ? parts[1] : null);
+        }
+      } else {
+        setCurrentView('home');
+        setCurrentId(null);
+      }
+    };
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+
+    const onLogout = () => {
+      alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
+      handleLogout();
+    };
+    window.addEventListener('auth:logout', onLogout);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('auth:logout', onLogout);
+    };
+  }, []);
+
+  useEffect(() => {
     if (localStorage.getItem("accessToken")) {
       setIsLoggedIn(true);
       const email = localStorage.getItem("email") || '';
+      const role = localStorage.getItem("role") || 'user';
       setUserInfo({
         username: localStorage.getItem("username") || '',
         email: email,
-        fullName: localStorage.getItem("fullName") || ''
+        fullName: localStorage.getItem("fullName") || '',
+        role: role
       });
-      if (email === 'admin@gmail.com') {
-        setCurrentView('admin_dashboard');
+      if (role === 'admin') {
+        window.location.hash = 'admin_dashboard';
       }
     }
   }, []);
@@ -45,12 +83,13 @@ function App() {
     localStorage.removeItem("username");
     localStorage.removeItem("email");
     localStorage.removeItem("fullName");
+    localStorage.removeItem("role");
     setIsLoggedIn(false);
-    setUserInfo({ username: '', email: '', fullName: '' });
+    setUserInfo({ username: '', email: '', fullName: '', role: 'user' });
     setSessions([]);
     setActiveSessionId(null);
     setIsChatLoaded(false);
-    setCurrentView('home');
+    window.location.hash = 'home';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -67,15 +106,8 @@ function App() {
   const fetchChats = async () => {
     if (!isLoggedIn) return;
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch("http://localhost:8000/api/chat/", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        handleLogout();
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-        return;
-      }
+      const res = await apiFetch("http://localhost:8000/api/chat/");
+      if (res.status === 401) return; // handled by interceptor
       if (res.ok) {
         let data = await res.json();
         if (data.length === 0) {
@@ -89,6 +121,7 @@ function App() {
           return data;
         });
         setActiveSessionId(prevId => {
+          if (currentId) return parseInt(currentId) || currentId;
           if (prevId === 'temp') return 'temp';
           return data[0].id;
         });
@@ -100,17 +133,37 @@ function App() {
   };
 
   useEffect(() => {
+    if (currentView === 'chat' && activeSessionId) {
+      window.location.hash = `chat/${activeSessionId}`;
+    }
+  }, [activeSessionId, currentView]);
+
+  useEffect(() => {
+    if (currentView === 'chat' && currentId && isChatLoaded) {
+      // Don't sync if they are already the same to avoid redundant updates
+      const parsedId = parseInt(currentId) || currentId;
+      if (activeSessionId !== parsedId) {
+        setActiveSessionId(parsedId);
+      }
+    }
+  }, [currentId, currentView, isChatLoaded]);
+
+  useEffect(() => {
     if (currentView === 'chat' && !isChatLoaded) {
       fetchChats();
     }
   }, [currentView, isChatLoaded, isLoggedIn]);
 
 
+  const [isSending, setIsSending] = useState(false);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isSending) return;
 
+    setIsSending(true);
     const currentInput = inputValue;
+    setInputValue(''); // Clear input immediately
     const newUserMsg = { id: Date.now(), text: currentInput, sender: 'user' };
     const botLoadingId = Date.now() + 1;
 
@@ -118,10 +171,9 @@ function App() {
 
     if (targetSessionId === 'temp') {
       try {
-        const token = localStorage.getItem("accessToken");
-        const createRes = await fetch("http://localhost:8000/api/chat/", {
+        const createRes = await apiFetch("http://localhost:8000/api/chat/", {
           method: "POST",
-          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" }
         });
         if (createRes.ok) {
           const newSession = await createRes.json();
@@ -132,6 +184,7 @@ function App() {
         }
       } catch (err) {
         console.error("Lỗi tạo chat mới:", err);
+        setIsSending(false);
         return;
       }
     }
@@ -165,37 +218,42 @@ function App() {
     setInputValue('');
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`http://localhost:8000/api/chat/${targetSessionId}/messages/`, {
+      const response = await apiFetch(`http://localhost:8000/api/chat/${targetSessionId}/messages/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: currentInput })
       });
 
       if (response.status === 401) {
-        handleLogout();
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
+        setIsSending(false);
         return;
       }
 
       if (response.ok) {
         const data = await response.json();
-        // data has user_message, bot_message, session_title
         const botText = data.bot_message.text;
         const newTitle = data.session_title;
-
-        // Replace tin nhắn Loading bằng kết quả thật
         setSessions(prevSessions => prevSessions.map(session => {
           if (session.id === targetSessionId) {
-            const updatedMessages = session.messages.map(m =>
-              m.id === botLoadingId ? { ...m, id: data.bot_message.id, text: botText, isLoading: false } : m
-            );
+            const updatedMessages = session.messages.map(m => {
+              if (m.id === newUserMsg.id) return data.user_message;
+              if (m.id === botLoadingId) return { ...m, id: data.bot_message.id, text: botText, isLoading: false };
+              return m;
+            });
             return { ...session, title: newTitle, messages: updatedMessages };
           }
           return session;
         }));
       } else {
-        throw new Error("Lỗi Server");
+        setSessions(prevSessions => prevSessions.map(session => {
+          if (session.id === targetSessionId) {
+            const updatedMessages = session.messages.map(m =>
+              m.id === botLoadingId ? { ...m, text: "Mất kết nối với máy chủ. Vui lòng thử lại sau.", isLoading: false } : m
+            );
+            return { ...session, messages: updatedMessages };
+          }
+          return session;
+        }));
       }
     } catch (error) {
       console.error("Lỗi gọi Chat API:", error);
@@ -208,6 +266,8 @@ function App() {
         }
         return session;
       }));
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -215,11 +275,13 @@ function App() {
     const emptySession = sessions.find(s => s.id === 'temp' || (s.messages && s.messages.length === 0));
     if (emptySession) {
       setActiveSessionId(emptySession.id);
+      window.location.hash = `chat/${emptySession.id}`;
       return;
     }
     const newSession = { id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] };
     setSessions([newSession, ...sessions]);
     setActiveSessionId('temp');
+    window.location.hash = `chat/temp`;
   };
 
   useEffect(() => {
@@ -279,16 +341,18 @@ function App() {
         localStorage.setItem("username", data.username || '');
         localStorage.setItem("email", data.email || '');
         localStorage.setItem("fullName", data.full_name || '');
+        localStorage.setItem("role", data.role || 'user');
         setIsLoggedIn(true);
         setUserInfo({
           username: data.username || '',
           email: data.email || '',
-          fullName: data.full_name || ''
+          fullName: data.full_name || '',
+          role: data.role || 'user'
         });
-        if (data.email === 'admin@gmail.com') {
-          setCurrentView('admin_dashboard');
+        if (data.role === 'admin') {
+          window.location.hash = 'admin_dashboard';
         } else {
-          setCurrentView('home');
+          window.location.hash = 'home';
         }
       } catch (err) {
         setAuthError('Lỗi kết nối đến máy chủ.');
@@ -303,7 +367,7 @@ function App() {
     setAuthConfirmPassword('');
     setAuthUsername('');
     setAuthFullName('');
-    setCurrentView(mode);
+    window.location.hash = mode;
   };
 
 
@@ -312,7 +376,7 @@ function App() {
     <div className="app-container">
       {currentView === 'home' ? (
         <HomeScreen 
-          setCurrentView={setCurrentView}
+          setCurrentView={(v) => window.location.hash = v}
           isLoggedIn={isLoggedIn}
           userInfo={userInfo}
           handleLogout={handleLogout}
@@ -325,7 +389,7 @@ function App() {
       ) : currentView === 'login' || currentView === 'register' ? (
         <AuthScreen 
           currentView={currentView}
-          setCurrentView={setCurrentView}
+          setCurrentView={(v) => window.location.hash = v}
           handleAuthSubmit={handleAuthSubmit}
           authError={authError}
           authUsername={authUsername} setAuthUsername={setAuthUsername}
@@ -337,13 +401,14 @@ function App() {
         />
       ) : currentView === 'chat' ? (
         <ChatScreen 
+          initialId={currentId}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           handleNewChat={handleNewChat}
           sessions={sessions}
           activeSessionId={activeSessionId}
           setActiveSessionId={setActiveSessionId}
-          setCurrentView={setCurrentView}
+          setCurrentView={(v) => window.location.hash = v}
           isLoggedIn={isLoggedIn}
           handleLogout={handleLogout}
           activeSession={activeSession}
@@ -352,15 +417,16 @@ function App() {
           inputValue={inputValue}
           setInputValue={setInputValue}
           handleSendMessage={handleSendMessage}
+          isSending={isSending}
         />
       ) : null}
 
       {currentView === 'diary' && (
-        <DiaryViewer onBack={() => setCurrentView('home')} handleLogout={handleLogout} />
+        <DiaryViewer initialId={currentId} onBack={() => window.location.hash = 'home'} handleLogout={handleLogout} />
       )}
 
       {currentView === 'lesson' && (
-        <LessonViewer onBack={() => setCurrentView('home')} />
+        <LessonViewer initialId={currentId} onBack={() => window.location.hash = 'home'} />
       )}
 
       {currentView === 'admin_dashboard' && (
@@ -368,7 +434,7 @@ function App() {
       )}
       
       {currentView === 'test' && (
-        <TestViewer onBack={() => setCurrentView('home')} handleLogout={handleLogout} />
+        <TestViewer initialId={currentId} onBack={() => window.location.hash = 'home'} handleLogout={handleLogout} />
       )}
     </div>
   );

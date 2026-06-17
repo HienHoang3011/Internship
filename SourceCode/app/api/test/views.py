@@ -12,7 +12,7 @@ from .serializers import TestSerializer, TestResultSerializer
 
 class IsAdminUser(IsAuthenticated):
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.email == 'admin@gmail.com')
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'admin')
 
 class TestListCreateView(generics.ListCreateAPIView):
     serializer_class = TestSerializer
@@ -52,6 +52,10 @@ class TestAnalyzeView(APIView):
     def post(self, request, result_id):
         test_result = get_object_or_404(TestResult, id=result_id, user=request.user)
         test = test_result.test
+        
+        # Nếu đã có kết quả phân tích trong DB thì trả về luôn, không gọi AI nữa
+        if test_result.ai_analysis:
+            return Response({"analysis": test_result.ai_analysis}, status=status.HTTP_200_OK)
         
         # Prepare context for AI
         answers_data = test_result.answers
@@ -103,14 +107,44 @@ Liệt kê từng khía cạnh/nhóm đo lường kèm theo mức độ hoặc �
 (Lưu ý: Nếu kết quả DASS-21 ở mức Nặng hoặc Rất nặng, bắt buộc phải có khuyến nghị tìm gặp bác sĩ tâm lý hoặc chuyên gia y tế).
 """
         
+        import requests
+        
+        analysis_text = ""
         try:
-            client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt
-            )
-            analysis_text = response.text
-            return Response({"analysis": analysis_text}, status=status.HTTP_200_OK)
+            oss_base_url = os.environ.get("GPT_OSS_20B_BASE_URL")
+            if oss_base_url:
+                # Gọi OSS Model (chuẩn OpenAI API)
+                response = requests.post(
+                    f"{oss_base_url}/chat/completions",
+                    json={
+                        "model": "GPT_OSS_20B",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.5
+                    },
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    analysis_text = data["choices"][0]["message"]["content"]
+                else:
+                    raise Exception(f"OSS Model returned status: {response.status_code}")
+            else:
+                raise Exception("GPT_OSS_20B_BASE_URL is not set")
         except Exception as e:
-            print(f"Error generating analysis: {e}")
-            return Response({"error": "Failed to analyze test results"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f"Error calling local OSS model: {e}. Falling back to Gemini...")
+            try:
+                client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt
+                )
+                analysis_text = response.text
+            except Exception as gemini_e:
+                print(f"Error generating analysis with Gemini: {gemini_e}")
+                return Response({"error": "Failed to analyze test results"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        # Lưu kết quả phân tích vào database
+        test_result.ai_analysis = analysis_text
+        test_result.save()
+        
+        return Response({"analysis": analysis_text}, status=status.HTTP_200_OK)

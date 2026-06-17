@@ -9,6 +9,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data['username'] = self.user.username
         data['email'] = self.user.email
+        data['role'] = self.user.role
         if hasattr(self.user, 'full_name'):
             data['full_name'] = self.user.full_name
         return data

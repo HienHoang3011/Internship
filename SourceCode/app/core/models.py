@@ -31,6 +31,7 @@ class User(AbstractBaseUser):
     password = models.CharField(max_length=128, db_column='password_hash')
     
     full_name = models.CharField(max_length=100, null=True, blank=True)
+    role = models.CharField(max_length=20, default='user')
     
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
@@ -150,6 +151,7 @@ class TestResult(models.Model):
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='results')
     answers = models.JSONField(default=list)
     raw_result = models.JSONField(blank=True, null=True)
+    ai_analysis = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

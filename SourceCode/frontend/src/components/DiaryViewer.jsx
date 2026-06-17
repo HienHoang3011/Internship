@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 
-const DiaryViewer = ({ onBack, handleLogout }) => {
+const DiaryViewer = ({ initialId, onBack, handleLogout }) => {
   const [diaries, setDiaries] = useState([]);
   const [activeDiary, setActiveDiary] = useState(null);
   const [diaryForm, setDiaryForm] = useState({ title: '', content: '', emotion: 'Vui vẻ', intensity: 5, tags: [] });
@@ -11,19 +12,21 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
   useEffect(() => {
     const fetchDiaries = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch("http://localhost:8000/api/diaries/", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          handleLogout();
-          alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-          return;
-        }
+        const res = await apiFetch("http://localhost:8000/api/diaries/");
+        if (res.status === 401) return;
         if (res.ok) {
           const data = await res.json();
           setDiaries(data);
-          setIsDiariesLoaded(true);
+          if (initialId) {
+            const d = data.find(item => item.id === parseInt(initialId));
+            if (d) {
+              setActiveDiary(d);
+              setDiaryForm({
+                title: d.title || '', content: d.content || '', emotion: d.emotion || 'Vui vẻ',
+                intensity: d.intensity || 5, tags: d.tags || []
+              });
+            }
+          }
         }
       } catch (err) {
         console.error("Lỗi khi tải nhật ký:", err);
@@ -32,31 +35,39 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
 
     if (!isDiariesLoaded) {
       fetchDiaries();
+      setIsDiariesLoaded(true);
     }
-  }, [isDiariesLoaded, handleLogout]);
+  }, [isDiariesLoaded]); // Remove initialId from here, we will handle it in a separate effect
+
+  useEffect(() => {
+    if (isDiariesLoaded) {
+      if (initialId) {
+        const d = diaries.find(item => item.id === parseInt(initialId));
+        if (d) {
+          setActiveDiary(d);
+          setDiaryForm({
+            title: d.title || '', content: d.content || '', emotion: d.emotion || 'Vui vẻ',
+            intensity: d.intensity || 5, tags: d.tags || []
+          });
+        }
+      } else {
+        setActiveDiary(null);
+        setDiaryForm({ title: '', content: '', emotion: 'Vui vẻ', intensity: 5, tags: [] });
+      }
+    }
+  }, [initialId, isDiariesLoaded]); // React to initialId changes
 
   const handleSaveDiary = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const method = activeDiary ? "PUT" : "POST";
-      const url = activeDiary
-        ? `http://localhost:8000/api/diaries/${activeDiary.id}/`
-        : "http://localhost:8000/api/diaries/";
-
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(diaryForm)
       });
 
-      if (res.status === 401) {
-        handleLogout();
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-        return;
-      }
+      if (res.status === 401) return;
 
       if (res.ok) {
         const savedDiary = await res.json();
@@ -66,6 +77,7 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
           setDiaries([savedDiary, ...diaries]);
         }
         setActiveDiary(savedDiary);
+        window.location.hash = `diary/${savedDiary.id}`;
         alert("Đã lưu nhật ký thành công!");
       }
     } catch (err) {
@@ -77,6 +89,7 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
   const startNewDiary = () => {
     setActiveDiary(null);
     setDiaryForm({ title: '', content: '', emotion: 'Vui vẻ', intensity: 5, tags: [] });
+    window.location.hash = 'diary';
   };
 
   const openDiary = (diary) => {
@@ -88,6 +101,7 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
       intensity: diary.intensity || 5,
       tags: diary.tags || []
     });
+    window.location.hash = `diary/${diary.id}`;
   };
 
   const handleAddTag = (e) => {
@@ -108,16 +122,10 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
     e.stopPropagation();
     if (!window.confirm("Bạn có chắc muốn xóa nhật ký này?")) return;
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch(`http://localhost:8000/api/diaries/${id}/`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+      const res = await apiFetch(`http://localhost:8000/api/diaries/${id}/`, {
+        method: "DELETE"
       });
-      if (res.status === 401) {
-        handleLogout();
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-        return;
-      }
+      if (res.status === 401) return;
       if (res.ok) {
         setDiaries(diaries.filter(d => d.id !== id));
         if (activeDiary && activeDiary.id === id) {
@@ -153,12 +161,12 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
           {diaries.map((diary) => (
             <div key={diary.id} className={`history-item ${activeDiary?.id === diary.id ? 'active' : ''}`} onClick={() => openDiary(diary)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '1rem', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', position: 'relative', height: 'auto', borderRadius: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '1rem', color: 'var(--text-primary)' }}>{diary.title || `Nhật ký ${new Date(diary.created_at).toLocaleDateString('vi-VN')}`}</span>
+                <span style={{ fontWeight: 'bold', fontSize: '1rem', color: 'var(--text-primary)' }}>{diary.title || `Nhật ký ${new Date(diary.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}`}</span>
                 <button className="delete-btn" onClick={(e) => handleDeleteDiary(diary.id, e)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 0.5rem' }}>✕</button>
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)', alignItems: 'center' }}>
                 <span style={{ background: 'var(--surface)', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>{diary.emotion}</span>
-                <span>{new Date(diary.created_at).toLocaleDateString('vi-VN')}</span>
+                <span>{new Date(diary.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', whiteSpace: 'normal' }}>
                 {diary.content || 'Chưa có nội dung...'}
@@ -183,7 +191,7 @@ const DiaryViewer = ({ onBack, handleLogout }) => {
         <div className="diary-editor" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '2rem', boxSizing: 'border-box', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: '500' }}>
-              {activeDiary ? `Ngày viết: ${new Date(activeDiary.created_at).toLocaleDateString('vi-VN')}` : `Ngày viết: ${new Date().toLocaleDateString('vi-VN')}`}
+              {activeDiary ? `Tạo: ${new Date(activeDiary.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })} | Cập nhật: ${new Date(activeDiary.updated_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : `Ngày viết: ${new Date().toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}`}
             </div>
             <button className="btn-primary" onClick={handleSaveDiary} disabled={!diaryForm.content.trim()} style={{ opacity: diaryForm.content.trim() ? 1 : 0.5, cursor: diaryForm.content.trim() ? 'pointer' : 'not-allowed', padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(27, 122, 138, 0.3)' }}>
               Lưu nhật ký

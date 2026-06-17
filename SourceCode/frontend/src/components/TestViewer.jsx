@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import './TestViewer.css';
 import gameBg1 from '../assets/game-bg1.jpg';
+import { apiFetch } from '../utils/api';
 
-const TestViewer = ({ onBack, handleLogout }) => {
+const TestViewer = ({ initialId, onBack, handleLogout }) => {
   const [viewState, setViewState] = useState('list'); // 'list' | 'taking' | 'result'
   const [tests, setTests] = useState([]);
   const [activeTest, setActiveTest] = useState(null);
@@ -16,37 +17,52 @@ const TestViewer = ({ onBack, handleLogout }) => {
   const [testResult, setTestResult] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showHistoryAnswers, setShowHistoryAnswers] = useState(false);
 
-  const token = localStorage.getItem("accessToken");
-
-  async function fetchTests() {
-    try {
-      const res = await fetch("http://localhost:8000/api/tests/", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-        if (handleLogout) handleLogout();
-        return;
-      }
-      if (res.ok) setTests(await res.json());
-    } catch (err) { console.error(err); }
-  }
+  const [isTestsLoaded, setIsTestsLoaded] = useState(false);
 
   useEffect(() => {
-    fetchTests();
-  }, [token]);
+    async function fetchTests() {
+      try {
+        const res = await apiFetch("http://localhost:8000/api/tests/");
+        if (res.status === 401) return;
+        if (res.ok) {
+          const data = await res.json();
+          setTests(data);
+          setIsTestsLoaded(true);
+        }
+      } catch (err) { console.error(err); }
+    }
+    if (!isTestsLoaded) {
+      fetchTests();
+    }
+  }, [isTestsLoaded]);
 
-  const handleViewTestDetail = async (test) => {
+  useEffect(() => {
+    if (isTestsLoaded) {
+      if (initialId) {
+        const test = tests.find(t => t.id === parseInt(initialId));
+        if (test) {
+          handleViewTestDetail(test, false);
+        } else {
+          setViewState('list');
+        }
+      } else {
+        setActiveTest(null);
+        setViewState('list');
+      }
+    }
+  }, [initialId, isTestsLoaded, tests]);
+
+  const handleViewTestDetail = async (test, updateHash = true) => {
     setActiveTest(test);
     setViewState('detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (updateHash) window.location.hash = `test/${test.id}`;
     
     // Fetch history
     try {
-      const res = await fetch("http://localhost:8000/api/tests/results/", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await apiFetch("http://localhost:8000/api/tests/results/");
       if (res.ok) {
         const data = await res.json();
         // Filter history for this specific test
@@ -67,18 +83,14 @@ const TestViewer = ({ onBack, handleLogout }) => {
 
   const handleViewHistoryDetail = (result) => {
     setTestResult(result);
-    setAiAnalysis('');
+    setAiAnalysis(result.ai_analysis || '');
+    setShowHistoryAnswers(false);
     setViewState('result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOptionSelect = (questionId, optionId) => {
     setAnswers({ ...answers, [questionId]: optionId });
-    if (activeTest && currentQuestionIndex < activeTest.questions.length - 1) {
-      setTimeout(() => {
-        setCurrentQuestionIndex(prev => prev + 1);
-      }, 400);
-    }
   };
 
   const handleSubmitTest = async () => {
@@ -114,9 +126,9 @@ const TestViewer = ({ onBack, handleLogout }) => {
     });
 
     try {
-      const res = await fetch("http://localhost:8000/api/tests/results/", {
+      const res = await apiFetch("http://localhost:8000/api/tests/results/", {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           test: activeTest.id,
           answers: answersPayload,
@@ -137,9 +149,8 @@ const TestViewer = ({ onBack, handleLogout }) => {
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/tests/results/${testResult.id}/analyze/`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+      const res = await apiFetch(`http://localhost:8000/api/tests/results/${testResult.id}/analyze/`, {
+        method: "POST"
       });
       if (res.ok) {
         const data = await res.json();
@@ -198,66 +209,73 @@ const TestViewer = ({ onBack, handleLogout }) => {
                 />
                 <button type="submit">Tìm kiếm</button>
               </form>
-              <div className="hero-watermark">
-                 <img src="/src/assets/logo-web-transparent.png" alt="MindCareAI" />
-              </div>
             </div>
           </div>
 
-          <div className="test-category-section">
-            <h2 className="category-title">Test tâm lý chuyên sâu</h2>
-            {clinicalTests.length > 0 ? (
-              <div className="test-grid">
-                {clinicalTests.map(t => (
-                  <div key={t.id} className="test-card">
-                    {t.image_url && <img src={t.image_url} alt={t.name} className="test-card-img" />}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div className="test-type-badge" style={{ marginBottom: 0 }}>{t.type}</div>
-                      <div className="test-question-count">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        {t.questions ? t.questions.length : 21} câu hỏi
-                      </div>
-                    </div>
-                    <h3>{t.name}</h3>
-                    <p>{t.description}</p>
-                    <button className="btn-test-card-start" onClick={() => handleViewTestDetail(t)}>
-                      Bắt Đầu Làm Bài
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </button>
-                  </div>
-                ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1400px', margin: '-3rem auto 4rem auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
+            
+            <div className="test-category-box">
+              <div className="test-category-header">
+                <h2 className="category-title" style={{ margin: 0 }}>Test tâm lý chuyên sâu</h2>
+                <img src="/src/assets/logo-web-transparent.png" alt="MindCareAI" className="category-logo" />
               </div>
-            ) : (
-              <div className="empty-category-note">Hiện tại chưa có bài test nào trong mục này. Sẽ có sẵn sau!</div>
-            )}
-          </div>
+              {clinicalTests.length > 0 ? (
+                <div className="test-grid">
+                  {clinicalTests.map(t => (
+                    <div key={t.id} className="test-card">
+                      {t.image_url && <img src={t.image_url} alt={t.name} className="test-card-img" />}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <div className="test-type-badge" style={{ marginBottom: 0 }}>{t.type}</div>
+                        <div className="test-question-count">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          {t.questions ? t.questions.length : 21} câu hỏi
+                        </div>
+                      </div>
+                      <h3>{t.name}</h3>
+                      <p>{t.description}</p>
+                      <button className="btn-test-card-start" onClick={() => handleViewTestDetail(t)}>
+                        Bắt Đầu Làm Bài
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-category-note">Hiện tại chưa có bài test nào trong mục này. Sẽ có sẵn sau!</div>
+              )}
+            </div>
 
-          <div className="test-category-section">
-            <h2 className="category-title">Trắc nghiệm tính cách</h2>
-            {personalityTests.length > 0 ? (
-              <div className="test-grid">
-                {personalityTests.map(t => (
-                  <div key={t.id} className="test-card">
-                    {t.image_url && <img src={t.image_url} alt={t.name} className="test-card-img" />}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div className="test-type-badge" style={{ marginBottom: 0 }}>{t.type}</div>
-                      <div className="test-question-count">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        {t.questions ? t.questions.length : 10} câu hỏi
-                      </div>
-                    </div>
-                    <h3>{t.name}</h3>
-                    <p>{t.description}</p>
-                    <button className="btn-test-card-start" onClick={() => handleViewTestDetail(t)}>
-                      Bắt Đầu Làm Bài
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </button>
-                  </div>
-                ))}
+            <div className="test-category-box">
+              <div className="test-category-header">
+                <h2 className="category-title" style={{ margin: 0 }}>Trắc nghiệm tính cách</h2>
+                <img src="/src/assets/logo-web-transparent.png" alt="MindCareAI" className="category-logo" />
               </div>
-            ) : (
-              <div className="empty-category-note">Hiện tại chưa có bài test nào trong mục này. Sẽ có sẵn sau!</div>
-            )}
+              {personalityTests.length > 0 ? (
+                <div className="test-grid">
+                  {personalityTests.map(t => (
+                    <div key={t.id} className="test-card">
+                      {t.image_url && <img src={t.image_url} alt={t.name} className="test-card-img" />}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <div className="test-type-badge" style={{ marginBottom: 0 }}>{t.type}</div>
+                        <div className="test-question-count">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          {t.questions ? t.questions.length : 10} câu hỏi
+                        </div>
+                      </div>
+                      <h3>{t.name}</h3>
+                      <p>{t.description}</p>
+                      <button className="btn-test-card-start" onClick={() => handleViewTestDetail(t)}>
+                        Bắt Đầu Làm Bài
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-category-note">Hiện tại chưa có bài test nào trong mục này. Sẽ có sẵn sau!</div>
+              )}
+            </div>
+
           </div>
         </div>
       )}
@@ -432,6 +450,32 @@ const TestViewer = ({ onBack, handleLogout }) => {
               </h3>
               <div style={{ lineHeight: '1.8', color: 'var(--text-primary)', fontSize: '1.05rem' }}>
                 <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+            <button 
+              className="btn-back-normal" 
+              onClick={() => setShowHistoryAnswers(!showHistoryAnswers)}
+              style={{ margin: '0 auto' }}
+            >
+              {showHistoryAnswers ? 'Ẩn đáp án' : 'Xem chi tiết đáp án bạn đã chọn'}
+            </button>
+          </div>
+
+          {showHistoryAnswers && testResult.answers && testResult.answers.length > 0 && (
+            <div className="analysis-content" style={{ marginTop: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--primary)' }}>Chi tiết đáp án</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left' }}>
+                {testResult.answers.map((ans, idx) => (
+                  <div key={idx} style={{ padding: '1rem', background: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                    <p style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#111827' }}>Câu {idx + 1}: {ans.question}</p>
+                    <p style={{ color: '#4b5563', margin: 0 }}>
+                      <span style={{ color: 'var(--primary)', fontWeight: '500' }}>Đã chọn:</span> {ans.answer} {ans.score !== null && `(${ans.score} điểm)`}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           )}

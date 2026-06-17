@@ -94,7 +94,7 @@
   background-position: center;
   background-attachment: fixed;
   min-height: 100vh;
-  padding-top: 5rem;
+  padding-top: 3rem;
 }
 
 .test-hero-section {
@@ -103,8 +103,8 @@
   align-items: flex-start;
   text-align: left;
   max-width: 1400px;
-  margin: 0 auto 3rem;
-  padding: 0 5%;
+  margin: 0 auto 0 auto;
+  padding: 0 5% 6rem 5%;
 }
 
 .test-hero-content {
@@ -125,7 +125,7 @@
 .test-hero-content p {
   font-size: 1.25rem;
   color: #4b5563;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .hero-watermark {
@@ -136,7 +136,7 @@
 }
 
 .hero-watermark img {
-  height: 40px;
+  height: 90px;
   object-fit: contain;
 }
 
@@ -182,10 +182,10 @@
 .test-category-section {
   width: 95%;
   max-width: 1400px;
-  margin: 0 auto 4rem;
+  margin: 0 auto 2.5rem;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
-  padding: 3rem 0;
+  padding: 2.5rem 0;
   border-radius: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(255,255,255,0.5);
@@ -321,6 +321,39 @@
 .btn-start-massive:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 15px 35px rgba(27, 122, 138, 0.4);
+}
+
+.test-category-box {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.test-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.category-logo {
+  height: 60px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .test-category-box {
+    padding: 1.5rem;
+  }
+  .category-logo {
+    height: 40px;
+  }
 }
 
 /* Detail Screen - Landing Page Style */
@@ -708,7 +741,8 @@
   border-radius: 24px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
   text-align: center;
-  max-width: 800px;
+  max-width: 1200px;
+  width: 95%;
   margin: 0 auto;
 }
 

@@ -51,3 +51,110 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return self.username
+
+class DiaryEntry(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='diaries')
+    title = models.CharField(max_length=255, blank=True, null=True)
+    content = models.TextField()
+    emotion = models.CharField(max_length=50, blank=True, null=True)
+    intensity = models.IntegerField(default=5)
+    tags = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'diaries'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Diary of {self.user.username} at {self.created_at}"
+
+
+class ChatSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
+    title = models.CharField(max_length=255, default='Cuộc trò chuyện mới')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'chat_sessions'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Chat Session {self.id} of {self.user.username}"
+
+class ChatMessage(models.Model):
+    SENDER_CHOICES = (
+        ('user', 'User'),
+        ('bot', 'Bot'),
+    )
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
+    sender = models.CharField(max_length=10, choices=SENDER_CHOICES)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'chat_messages'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.sender}: {self.text[:20]}"
+
+
+
+class Test(models.Model):
+    TYPE_CHOICES = (
+        ('clinical', 'Clinical'),
+        ('personality', 'Personality'),
+    )
+    name = models.CharField(max_length=255)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    description = models.TextField(blank=True, null=True)
+    image_url = models.CharField(max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tests'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+class TestQuestion(models.Model):
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    order_number = models.IntegerField(default=0)
+    dimension = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        db_table = 'test_questions'
+        ordering = ['order_number', 'id']
+
+    def __str__(self):
+        return f"{self.test.name} - Q{self.order_number}"
+
+class QuestionOption(models.Model):
+    question = models.ForeignKey(TestQuestion, on_delete=models.CASCADE, related_name='options')
+    option_text = models.CharField(max_length=255)
+    score = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'question_options'
+        ordering = ['id']
+
+    def __str__(self):
+        return self.option_text
+
+class TestResult(models.Model):
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='test_results')
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='results')
+    answers = models.JSONField(default=list)
+    raw_result = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'test_results'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.test.name} ({self.created_at.date()})"

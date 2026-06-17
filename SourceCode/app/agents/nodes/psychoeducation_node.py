@@ -37,8 +37,10 @@ def psychoeducation_node(state: AgentState):
     - Giải thích rõ ràng các thuật ngữ chuyên ngành (nếu có sử dụng).
 
     ### Hành vi mong muốn
-    - Đưa ra cấu trúc trả lời mạch lạc: Nguyên nhân -> Cơ chế tâm lý -> Phương pháp tiếp cận.
-    - Trích dẫn định nghĩa hoặc lý thuyết tâm lý học uy tín nếu phù hợp.
+    - Đưa ra cấu trúc trả lời mạch lạc: Phân tích nguyên nhân đa chiều -> Cơ chế tâm lý -> Phương pháp tiếp cận/Giải pháp.
+    - Đào sâu vào vấn đề: Không chỉ liệt kê bề mặt, hãy giải thích cặn kẽ TẠI SAO các hiện tượng đó lại phổ biến.
+    - Trích dẫn định nghĩa hoặc lý thuyết tâm lý học uy tín (ví dụ: Tháp nhu cầu Maslow, Thuyết nhận thức hành vi) nếu phù hợp.
+    - Sử dụng ví dụ thực tế hoặc ẩn dụ để làm rõ các khái niệm trừu tượng.
 
     ### Ràng buộc đầu ra
     - Viết bằng tiếng Việt rõ ràng, ngôn phong chuyên gia.

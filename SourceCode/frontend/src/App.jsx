@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
-
+import AdminDashboard from './components/AdminDashboard';
+import TestViewer from './components/TestViewer';
+import DiaryViewer from './components/DiaryViewer';
+import LessonViewer from './components/LessonViewer';
+import AuthScreen from './components/AuthScreen';
+import HomeScreen from './components/HomeScreen';
+import ChatScreen from './components/ChatScreen';
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'chat' | 'login' | 'register'
+  const [currentView, setCurrentView] = useState('home'); // 'home' | 'chat' | 'login' | 'register' | 'diary'
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isUtilitiesOpen, setIsUtilitiesOpen] = useState(false);
 
   // Auth State
   const [authUsername, setAuthUsername] = useState('');
@@ -11,23 +19,83 @@ function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authConfirmPassword, setAuthConfirmPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userInfo, setUserInfo] = useState({ username: '', email: '', fullName: '' });
+  const [showPassword, setShowPassword] = useState(false);
+
+
+  useEffect(() => {
+    if (localStorage.getItem("accessToken")) {
+      setIsLoggedIn(true);
+      const email = localStorage.getItem("email") || '';
+      setUserInfo({
+        username: localStorage.getItem("username") || '',
+        email: email,
+        fullName: localStorage.getItem("fullName") || ''
+      });
+      if (email === 'admin@gmail.com') {
+        setCurrentView('admin_dashboard');
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    localStorage.removeItem("fullName");
+    setIsLoggedIn(false);
+    setUserInfo({ username: '', email: '', fullName: '' });
+    setSessions([]);
+    setActiveSessionId(null);
+    setIsChatLoaded(false);
+    setCurrentView('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Chat State
-  const [sessions, setSessions] = useState([
-    {
-      id: 1,
-      title: 'Cuộc trò chuyện đầu tiên',
-      messages: [
-        { id: 1, text: "Chào bạn, mình là MindCareAI. Bạn đang cảm thấy thế nào? Hãy chia sẻ cùng mình nhé, mình luôn ở đây để lắng nghe.", sender: 'bot' }
-      ]
-    }
-  ]);
-  const [activeSessionId, setActiveSessionId] = useState(1);
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [isChatLoaded, setIsChatLoaded] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // for mobile toggle
   const messagesEndRef = useRef(null);
 
-  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
+  const activeSession = sessions.find(s => s.id === activeSessionId) || { messages: [] };
+
+  const fetchChats = async () => {
+    if (!isLoggedIn) return;
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch("http://localhost:8000/api/chat/", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        handleLogout();
+        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
+        return;
+      }
+      if (res.ok) {
+        let data = await res.json();
+        if (data.length === 0) {
+          data = [{ id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] }];
+        }
+        setSessions(data);
+        setActiveSessionId(data[0].id);
+        setIsChatLoaded(true);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải chat:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (currentView === 'chat' && !isChatLoaded) {
+      fetchChats();
+    }
+  }, [currentView, isChatLoaded, isLoggedIn]);
+
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -37,62 +105,95 @@ function App() {
     const newUserMsg = { id: Date.now(), text: currentInput, sender: 'user' };
     const botLoadingId = Date.now() + 1;
 
+    let targetSessionId = activeSessionId;
+
+    if (targetSessionId === 'temp') {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const createRes = await fetch("http://localhost:8000/api/chat/", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
+        });
+        if (createRes.ok) {
+          const newSession = await createRes.json();
+          targetSessionId = newSession.id;
+          setActiveSessionId(targetSessionId);
+        } else {
+          return;
+        }
+      } catch (err) {
+        console.error("Lỗi tạo chat mới:", err);
+        return;
+      }
+    }
+
     // Lấy context hiện tại của cuộc hội thoại
-    const currentSession = sessions.find(s => s.id === activeSessionId);
+    const currentSession = sessions.find(s => s.id === activeSessionId) || { title: 'Cuộc trò chuyện mới', messages: [] };
     let newTitle = currentSession.title;
-    if (currentSession.messages.length === 1 && newTitle.includes("Cuộc trò chuyện mới")) {
+    if (currentSession.messages.length === 0) {
       newTitle = currentInput.length > 20 ? currentInput.substring(0, 20) + '...' : currentInput;
     }
 
     // Update UI ngay lập tức với câu hỏi của User và một trạng thái Loading của Bot
-    setSessions(prevSessions => prevSessions.map(session => {
-      if (session.id === activeSessionId) {
-        return {
-          ...session,
-          title: newTitle,
-          messages: [...session.messages, newUserMsg, { id: botLoadingId, text: "Đang phân tích...", sender: 'bot', isLoading: true }]
-        };
+    setSessions(prevSessions => {
+      let updatedSessions = prevSessions;
+      // Change 'temp' to new targetSessionId if needed
+      if (activeSessionId === 'temp') {
+        updatedSessions = updatedSessions.map(s => s.id === 'temp' ? { ...s, id: targetSessionId } : s);
       }
-      return session;
-    }));
+      return updatedSessions.map(session => {
+        if (session.id === targetSessionId) {
+          return {
+            ...session,
+            title: newTitle,
+            messages: [...session.messages, newUserMsg, { id: botLoadingId, text: "Đang phân tích...", sender: 'bot', isLoading: true }]
+          };
+        }
+        return session;
+      });
+    });
 
     setInputValue('');
 
     try {
-      // Map về format API LLM yêu cầu (Langchain BaseMessage dictionary)
-      const apiMessages = currentSession.messages.map(m => ({
-        role: m.sender === 'user' ? 'user' : 'assistant',
-        content: m.text
-      }));
-      // Thêm câu hỏi hiện tại
-      apiMessages.push({ role: 'user', content: currentInput });
-
-      const response = await fetch("http://localhost:8001/chat", {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(`http://localhost:8000/api/chat/${targetSessionId}/messages/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages })
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ text: currentInput })
       });
 
-      const data = await response.json();
-      const botText = data.response || "Đã xảy ra lỗi từ phía hệ thống.";
+      if (response.status === 401) {
+        handleLogout();
+        alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
+        return;
+      }
 
-      // Replace tin nhắn Loading bằng kết quả thật
-      setSessions(prevSessions => prevSessions.map(session => {
-        if (session.id === activeSessionId) {
-          const updatedMessages = session.messages.map(m =>
-            m.id === botLoadingId ? { ...m, text: botText, isLoading: false, metadata: data.metadata } : m
-          );
-          return { ...session, messages: updatedMessages };
-        }
-        return session;
-      }));
+      if (response.ok) {
+        const data = await response.json();
+        // data has user_message, bot_message, session_title
+        const botText = data.bot_message.text;
+        const newTitle = data.session_title;
 
+        // Replace tin nhắn Loading bằng kết quả thật
+        setSessions(prevSessions => prevSessions.map(session => {
+          if (session.id === targetSessionId) {
+            const updatedMessages = session.messages.map(m =>
+              m.id === botLoadingId ? { ...m, id: data.bot_message.id, text: botText, isLoading: false } : m
+            );
+            return { ...session, title: newTitle, messages: updatedMessages };
+          }
+          return session;
+        }));
+      } else {
+        throw new Error("Lỗi Server");
+      }
     } catch (error) {
       console.error("Lỗi gọi Chat API:", error);
       setSessions(prevSessions => prevSessions.map(session => {
-        if (session.id === activeSessionId) {
+        if (session.id === targetSessionId) {
           const updatedMessages = session.messages.map(m =>
-            m.id === botLoadingId ? { ...m, text: "Mất kết nối với máy chủ AI. Vui lòng thử lại sau.", isLoading: false } : m
+            m.id === botLoadingId ? { ...m, text: "Mất kết nối với máy chủ. Vui lòng thử lại sau.", isLoading: false } : m
           );
           return { ...session, messages: updatedMessages };
         }
@@ -102,15 +203,14 @@ function App() {
   };
 
   const handleNewChat = () => {
-    const newSession = {
-      id: Date.now(),
-      title: 'Cuộc trò chuyện mới',
-      messages: [
-        { id: Date.now() + 1, text: "MindCareAI luôn bên bạn. Hôm nay bạn muốn tâm sự điều gì?", sender: 'bot' }
-      ]
-    };
+    const emptySession = sessions.find(s => s.id === 'temp' || (s.messages && s.messages.length === 0));
+    if (emptySession) {
+      setActiveSessionId(emptySession.id);
+      return;
+    }
+    const newSession = { id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] };
     setSessions([newSession, ...sessions]);
-    setActiveSessionId(newSession.id);
+    setActiveSessionId('temp');
   };
 
   useEffect(() => {
@@ -144,6 +244,10 @@ function App() {
           return;
         }
         alert("Đăng ký thành công! Vui lòng đăng nhập.");
+        setAuthPassword('');
+        setAuthConfirmPassword('');
+        setAuthUsername('');
+        setAuthFullName('');
         setCurrentView('login');
       } catch (err) {
         setAuthError('Lỗi kết nối đến máy chủ.');
@@ -163,7 +267,20 @@ function App() {
         const data = await res.json();
         localStorage.setItem("accessToken", data.access);
         localStorage.setItem("refreshToken", data.refresh);
-        setCurrentView('chat');
+        localStorage.setItem("username", data.username || '');
+        localStorage.setItem("email", data.email || '');
+        localStorage.setItem("fullName", data.full_name || '');
+        setIsLoggedIn(true);
+        setUserInfo({
+          username: data.username || '',
+          email: data.email || '',
+          fullName: data.full_name || ''
+        });
+        if (data.email === 'admin@gmail.com') {
+          setCurrentView('admin_dashboard');
+        } else {
+          setCurrentView('home');
+        }
       } catch (err) {
         setAuthError('Lỗi kết nối đến máy chủ.');
       }
@@ -172,230 +289,77 @@ function App() {
 
   const switchAuthMode = (mode) => {
     setAuthError('');
+    setAuthEmail('');
+    setAuthPassword('');
+    setAuthConfirmPassword('');
+    setAuthUsername('');
+    setAuthFullName('');
     setCurrentView(mode);
   };
+
+
 
   return (
     <div className="app-container">
       {currentView === 'home' ? (
-        // --- HOME SCREEN ---
-        <div className="home-screen">
-          {/* Background Elements */}
-          <div className="ambient-light light-1"></div>
-          <div className="ambient-light light-2"></div>
-
-          <header className="navbar">
-            <div className="logo" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>MindCare<span>AI</span></div>
-            <nav>
-              <a href="#faq">Về chúng tôi</a>
-              <a href="#faq">Câu hỏi thường gặp</a>
-              <div className="auth-buttons">
-                <button className="btn-text" onClick={() => setCurrentView('chat')}>💬 Trò chuyện</button>
-                <button className="nav-btn" onClick={() => setCurrentView('register')}>Đăng ký</button>
-              </div>
-            </nav>
-          </header>
-
-          <main className="hero-section">
-            <div className="hero-content">
-              <h1 className="hero-title">Khoảng Lặng Bình Yên <br /><span className="gradient-text">Cho Tâm Trí Bạn</span></h1>
-              <p className="hero-subtitle">
-                MindCareAI là chuyên gia tâm lý ảo luôn sẵn sàng lắng nghe, thấu hiểu khía cạnh cảm xúc của bạn một cách an toàn và riêng tư. Bất cứ khi nào bạn cần, chúng tôi luôn ở đây.
-              </p>
-              <div className="hero-actions">
-                <button className="btn-primary" onClick={() => setCurrentView('chat')}>Bắt đầu tâm sự</button>
-                <a href="#faq" className="btn-secondary">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </main>
-
-          <section id="faq" className="faq-section">
-            <div className="faq-container">
-              <h2 className="faq-heading">Câu Hỏi Thường Gặp</h2>
-              <div className="faq-list">
-                <div className="faq-item">
-                  <h3>Trò chuyện với MindCareAI có được bảo mật không?</h3>
-                  <p>Hoàn toàn bảo mật. Mọi cuộc trò chuyện của bạn với AI đều được mã hóa và không chia sẻ cho bất kỳ bên thứ ba nào. Không gian này là của riêng bạn.</p>
-                </div>
-                <div className="faq-item">
-                  <h3>MindCareAI có thể thay thế bác sĩ tâm lý không?</h3>
-                  <p>Không. MindCareAI là một công cụ hỗ trợ cảm xúc sơ cấp, giúp bạn giải tỏa căng thẳng và thấu hiểu bản thân. Nếu bạn gặp các vấn đề nghiêm trọng, chúng tôi khuyến khích bạn tìm đến các chuyên gia tâm lý hoặc bác sĩ chuyên khoa.</p>
-                </div>
-                <div className="faq-item">
-                  <h3>MindCareAI hoạt động như thế nào?</h3>
-                  <p>Hệ thống sử dụng trí tuệ nhân tạo để phân tích ngôn ngữ tự nhiên, từ đó đưa ra các phản hồi mang tính đồng cảm và gợi mở, giúp bạn giải phóng những cảm xúc tiêu cực một cách tự nhiên nhất.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <footer className="footer">
-            <p>&copy; 2026 MindCareAI. Đồng hành cùng sức khỏe tinh thần của bạn.</p>
-          </footer>
-        </div>
+        <HomeScreen 
+          setCurrentView={setCurrentView}
+          isLoggedIn={isLoggedIn}
+          userInfo={userInfo}
+          handleLogout={handleLogout}
+          isDropdownOpen={isDropdownOpen}
+          setIsDropdownOpen={setIsDropdownOpen}
+          isUtilitiesOpen={isUtilitiesOpen}
+          setIsUtilitiesOpen={setIsUtilitiesOpen}
+          handleNewChat={handleNewChat}
+        />
       ) : currentView === 'login' || currentView === 'register' ? (
-        // --- AUTH SCREENS ---
-        <div className="auth-screen">
-          <div className="ambient-light light-1"></div>
-          <div className="ambient-light light-2"></div>
+        <AuthScreen 
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          handleAuthSubmit={handleAuthSubmit}
+          authError={authError}
+          authUsername={authUsername} setAuthUsername={setAuthUsername}
+          authFullName={authFullName} setAuthFullName={setAuthFullName}
+          authEmail={authEmail} setAuthEmail={setAuthEmail}
+          authPassword={authPassword} setAuthPassword={setAuthPassword}
+          authConfirmPassword={authConfirmPassword} setAuthConfirmPassword={setAuthConfirmPassword}
+          switchAuthMode={switchAuthMode}
+        />
+      ) : currentView === 'chat' ? (
+        <ChatScreen 
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          handleNewChat={handleNewChat}
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          setActiveSessionId={setActiveSessionId}
+          setCurrentView={setCurrentView}
+          isLoggedIn={isLoggedIn}
+          handleLogout={handleLogout}
+          activeSession={activeSession}
+          userInfo={userInfo}
+          messagesEndRef={messagesEndRef}
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          handleSendMessage={handleSendMessage}
+        />
+      ) : null}
 
-          <div className="auth-card">
-            <div className="auth-logo" onClick={() => setCurrentView('home')}>MindCare<span>AI</span></div>
-            <h2>{currentView === 'login' ? 'Đăng nhập vào tài khoản' : 'Tạo tài khoản mới'}</h2>
-            <p className="auth-subtitle">
-              {currentView === 'login' ? 'Chào mừng bạn quay trở lại với MindCareAI' : 'Bắt đầu hành trình chăm sóc sức khỏe tinh thần cùng chúng tôi'}
-            </p>
+      {currentView === 'diary' && (
+        <DiaryViewer onBack={() => setCurrentView('home')} handleLogout={handleLogout} />
+      )}
 
-            {authError && <div style={{ color: 'red', marginBottom: '10px', fontSize: '0.9rem' }}>{authError}</div>}
-            <form className="auth-form" onSubmit={handleAuthSubmit}>
-              {currentView === 'register' && (
-                <>
-                  <div className="form-group">
-                    <label>Tên người dùng (Username)</label>
-                    <input type="text" placeholder="nguyenvana123" value={authUsername} onChange={e => setAuthUsername(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>Họ và tên</label>
-                    <input type="text" placeholder="Nguyễn Văn A" value={authFullName} onChange={e => setAuthFullName(e.target.value)} required />
-                  </div>
-                </>
-              )}
-              <div className="form-group">
-                <label>Email</label>
-                <input type="email" placeholder="email@example.com" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label>Mật khẩu</label>
-                <input type="password" placeholder="••••••••" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required />
-              </div>
-              {currentView === 'register' && (
-                <div className="form-group">
-                  <label>Xác nhận mật khẩu</label>
-                  <input type="password" placeholder="••••••••" value={authConfirmPassword} onChange={e => setAuthConfirmPassword(e.target.value)} required />
-                </div>
-              )}
+      {currentView === 'lesson' && (
+        <LessonViewer onBack={() => setCurrentView('home')} />
+      )}
 
-              <button type="submit" className="auth-submit-btn">
-                {currentView === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-              </button>
-            </form>
-
-            <div className="auth-switch">
-              {currentView === 'login' ? (
-                <p>Chưa có tài khoản? <button type="button" onClick={() => switchAuthMode('register')} className="auth-link">Đăng ký ngay</button></p>
-              ) : (
-                <p>Đã có tài khoản? <button type="button" onClick={() => switchAuthMode('login')} className="auth-link">Đăng nhập</button></p>
-              )}
-            </div>
-
-            <button className="auth-back-btn" onClick={() => setCurrentView('home')}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-                <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="currentColor" />
-              </svg>
-              Quay lại trang chủ
-            </button>
-          </div>
-        </div>
-      ) : (
-        // --- CHAT SCREEN (ChatGPT Style) ---
-        <div className="gpt-chat-screen">
-
-          {/* Sidebar */}
-          <div className={`gpt-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
-            <div className="sidebar-header">
-              <button className="new-chat-btn" onClick={handleNewChat}>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-                  <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                Trò chuyện mới
-              </button>
-              <button className="icon-btn hide-sidebar-btn" onClick={() => setIsSidebarOpen(false)} title="Ẩn menu">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-                  <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="sidebar-history">
-              <div className="history-label">Hôm nay</div>
-              {sessions.map(session => (
-                <button
-                  key={session.id}
-                  className={`history-item ${session.id === activeSessionId ? 'active' : ''}`}
-                  onClick={() => setActiveSessionId(session.id)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span className="history-title">{session.title}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="sidebar-footer">
-              <button className="back-home-btn" onClick={() => setCurrentView('home')}>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M9 22V12h6v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Về trang chủ
-              </button>
-            </div>
-          </div>
-
-          {/* Main Chat Area */}
-          <div className="gpt-main-area">
-            {!isSidebarOpen && (
-              <button className="show-sidebar-btn" onClick={() => setIsSidebarOpen(true)}>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-                  <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-
-            <div className="gpt-messages-container">
-              {activeSession.messages.map((msg, index) => (
-                <div key={msg.id} className={`gpt-message-row ${msg.sender}`}>
-                  <div className="gpt-message-content">
-                    <div className="gpt-avatar">
-                      {msg.sender === 'bot' ? '☘️' : 'U'}
-                    </div>
-                    <div className="gpt-message-text">
-                      <div className="gpt-sender-name">
-                        {msg.sender === 'bot' ? 'MindCareAI' : 'Bạn'}
-                      </div>
-                      <p>{msg.text}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} className="messages-bottom-spacer" />
-            </div>
-
-            <div className="gpt-input-area-wrapper">
-              <form className="gpt-input-box" onSubmit={handleSendMessage}>
-                <button type="button" className="gpt-attach-btn" title="Đính kèm">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                </button>
-                <input
-                  type="text"
-                  placeholder="Nhắn tin cho MindCareAI..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                />
-                <button type="submit" className="gpt-send-btn" disabled={!inputValue.trim()}>
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-                    <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor" />
-                  </svg>
-                </button>
-              </form>
-              <div className="gpt-footer-note">
-                MindCareAI có thể mắc lỗi. Vui lòng kiểm tra lại các thông tin quan trọng.
-              </div>
-            </div>
-          </div>
-
-        </div>
+      {currentView === 'admin_dashboard' && (
+        <AdminDashboard handleLogout={handleLogout} />
+      )}
+      
+      {currentView === 'test' && (
+        <TestViewer onBack={() => setCurrentView('home')} handleLogout={handleLogout} />
       )}
     </div>
   );

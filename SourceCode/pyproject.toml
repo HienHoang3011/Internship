@@ -28,4 +28,6 @@ dependencies = [
     "flask-cors>=6.0.2",
     "datasets>=4.8.5",
     "ragas>=0.4.3",
+    "gunicorn>=26.0.0",
+    "requests>=2.32.5",
 ]

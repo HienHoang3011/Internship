@@ -23,13 +23,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=psychology
       - DB_USER=root
       - DB_PASSWORD=password
-      - MONGO_URI=mongodb://mongo:27017/psychology
+      - MONGODB_URL=mongodb://mongo:27017/
+      - MONGODB_DATABASE=psychology
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - AGENT_API_URL=http://agent:8001/chat
     ports:
       - "8000:8000"
@@ -46,6 +50,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=psychology
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - MONGODB_URL=mongodb://mongo:27017/
+      - MONGODB_DATABASE=psychology
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     ports:
       - "8001:8001"
     depends_on:

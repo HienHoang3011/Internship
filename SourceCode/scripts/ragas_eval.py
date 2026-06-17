@@ -62,8 +62,6 @@ def run_agent_and_extract(question: str):
     return answer, contexts
 
 def main():
-    # Tập dữ liệu test được trích xuất từ các tài liệu gốc trong thư mục data
-    # Tập dữ liệu test được trích xuất từ các tài liệu gốc trong thư mục data (30 câu)
     eval_dataset = [
         {
             "question": "Sử dụng điện thoại thông minh trước khi ngủ ảnh hưởng thế nào đến giấc ngủ và nguyên nhân do đâu?",
@@ -104,86 +102,6 @@ def main():
         {
             "question": "Bệnh trầm cảm phát triển qua các giai đoạn nào và đặc điểm của giai đoạn trầm cảm nặng có triệu chứng loạn thần là gì?",
             "ground_truth": "Trầm cảm phát triển qua 4 giai đoạn: nhẹ, vừa, nặng, và nặng có triệu chứng loạn thần. Ở giai đoạn nặng có triệu chứng loạn thần, người bệnh có thể trải qua ảo giác, hoang tưởng, và có hành vi tự hại, đòi hỏi phải có sự can thiệp y tế khẩn cấp."
-        },
-        {
-            "question": "Bốn nhóm nguyên nhân chính gây ra bệnh trầm cảm là gì?",
-            "ground_truth": "Bốn nhóm nguyên nhân chính gây ra bệnh trầm cảm bao gồm: 1) Các bệnh thực thể ở não bộ (u não, viêm não...); 2) Sang chấn tâm lý; 3) Lạm dụng chất gây nghiện và chất tác động tâm thần; 4) Sự rối loạn của các chất dẫn truyền thần kinh nội sinh (Serotonin, Dopamin...)."
-        },
-        {
-            "question": "Phương pháp đồng hành 1:1 trong việc gỡ rối tâm lý có điểm gì đặc biệt so với tư vấn tâm lý thông thường?",
-            "ground_truth": "Phương pháp đồng hành 1:1 không sử dụng thuốc, không can thiệp xâm lấn cơ thể. Chuyên gia không đưa ra lời khuyên trực tiếp mà sử dụng các quy trình tham vấn để giúp khách hàng tự nhận biết vấn đề, tự tìm giải pháp chuyển hóa chính mình và chữa lành từ nguyên nhân gốc rễ."
-        },
-        {
-            "question": "Tại sao việc sử dụng điện thoại lại kích hoạt tâm trí thay vì giúp nó thư giãn trước khi ngủ?",
-            "ground_truth": "Đọc email hay lướt mạng xã hội khiến bạn nảy sinh nhiều suy nghĩ, lo lắng và căng thẳng thay vì để bộ não nghỉ ngơi và chuyển sang trạng thái thư giãn chuẩn bị cho giấc ngủ."
-        },
-        {
-            "question": "Burnout (kiệt sức) do thiết bị kỹ thuật số là gì và nguyên nhân chính do đâu?",
-            "ground_truth": "Burnout kỹ thuật số là tình trạng mệt mỏi, cạn kiệt năng lượng do liên tục phải kết nối với điện thoại và mạng internet. Nguyên nhân là do ranh giới giữa công việc và nghỉ ngơi bị xóa nhòa, khiến não bộ không có thời gian nghỉ ngơi thực sự."
-        },
-        {
-            "question": "Tâm lý học đóng vai trò gì trong việc tìm ra các yếu tố nguy cơ của bệnh tâm thần ngoài gen?",
-            "ground_truth": "Tâm lý học không chỉ nghiên cứu gen mà còn tìm hiểu cách môi trường, căng thẳng và trải nghiệm sống tác động (biểu sinh - epigenetics) làm bật hoặc tắt các gen liên quan đến bệnh tâm thần, từ đó giúp phát hiện sớm và can thiệp kịp thời."
-        },
-        {
-            "question": "Một trong những ứng dụng của tâm lý học trong thiết kế công nghệ tương lai là gì?",
-            "ground_truth": "Tâm lý học tham gia vào việc nghiên cứu giao diện người-máy (HCI), giúp thiết kế các thiết bị công nghệ và thiết bị đeo thông minh sao cho thân thiện, trực quan và ít gây quá tải thông tin cho người dùng nhất."
-        },
-        {
-            "question": "Kỹ thuật 'chim mồi' (decoy effect) hoạt động như thế nào trong thuyết phục?",
-            "ground_truth": "Kỹ thuật 'chim mồi' đưa ra một lựa chọn thứ 3 kém hấp dẫn hơn (chim mồi) để làm cho một trong hai lựa chọn ban đầu trở nên vượt trội và hấp dẫn hơn hẳn trong mắt người quyết định."
-        },
-        {
-            "question": "Việc sử dụng môi trường vật lý (priming) có thể ảnh hưởng thế nào đến quyết định của người khác?",
-            "ground_truth": "Môi trường có thể thiết lập tâm trí của một người. Ví dụ, việc cho họ cầm một cốc cà phê ấm có thể khiến họ cảm thấy người đối diện ấm áp và thân thiện hơn, từ đó dễ dàng bị thuyết phục hơn."
-        },
-        {
-            "question": "Biện pháp đầu tiên để phục hồi khỏi hội chứng Burnout là gì?",
-            "ground_truth": "Biện pháp quan trọng đầu tiên là ưu tiên chăm sóc bản thân (self-care), bao gồm việc đảm bảo ngủ đủ giấc, ăn uống lành mạnh và dành thời gian nghỉ ngơi, tập thể dục để phục hồi năng lượng thể chất và tinh thần."
-        },
-        {
-            "question": "Thay đổi góc nhìn (changing perspective) giúp gì trong việc giảm bớt tình trạng kiệt sức nghề nghiệp?",
-            "ground_truth": "Việc nhìn nhận lại giá trị công việc, tìm kiếm những khía cạnh có ý nghĩa hoặc tập trung vào những điều tích cực nhỏ bé có thể giúp giảm bớt cảm giác bi quan, chán nản và xa cách với công việc."
-        },
-        {
-            "question": "Tại sao việc đáp ứng nhu cầu của trẻ không đồng nghĩa với việc nuông chiều (đáp ứng mọi mong muốn)?",
-            "ground_truth": "Đáp ứng nhu cầu là việc cha mẹ hiểu và hỗ trợ con quản lý cảm xúc, phát triển kỹ năng đúng thời điểm, thay vì chỉ làm theo mọi đòi hỏi vô lý của trẻ. Điều này giúp trẻ học cách tự điều chỉnh và phát triển sự tự tin."
-        },
-        {
-            "question": "Chuyên gia khuyên cha mẹ nên phản ứng thế nào khi trẻ gặp tình huống khó khăn để giúp con phát triển kỹ năng đối phó?",
-            "ground_truth": "Cha mẹ không nên bảo vệ con quá mức khỏi các trải nghiệm tiêu cực mà nên để trẻ đối mặt và tự giải quyết vấn đề với sự hướng dẫn, hỗ trợ tinh thần từ cha mẹ, giúp trẻ phát triển kỹ năng đối phó lành mạnh."
-        },
-        {
-            "question": "Thiền định giúp ích gì cho sức khỏe tinh thần của người bị trầm cảm?",
-            "ground_truth": "Thiền giúp thư giãn hệ thần kinh, giảm căng thẳng và đưa sóng não về trạng thái Alpha/Theta bình an. Nó rèn luyện khả năng quan sát sự việc một cách khách quan, không phán xét, từ đó giảm bớt sự tự dằn vặt bản thân."
-        },
-        {
-            "question": "Phương pháp thực hành lòng biết ơn (Gratitude) hoạt động như thế nào và mang lại lợi ích gì?",
-            "ground_truth": "Viết ra những điều biết ơn mỗi ngày giúp người bệnh ghi nhận bản thân và những điều tích cực xung quanh. Việc này dần ghi dấu ấn tích cực vào tiềm thức, thay thế các suy nghĩ tiêu cực, chán nản và cảm giác vô dụng."
-        },
-        {
-            "question": "Việc gọi tên và nhận diện cảm xúc (như biết mình đang tức giận) quan trọng như thế nào?",
-            "ground_truth": "Gọi tên cảm xúc là bước đầu tiên và quan trọng nhất để cân bằng. Chỉ khi hướng sự chú ý vào bên trong và nhận diện được cảm xúc hiện tại, chúng ta mới có thể bắt đầu điều chỉnh suy nghĩ và hành vi cho phù hợp."
-        },
-        {
-            "question": "Cách nuôi dưỡng 'cây tích cực' trong tâm trí là gì?",
-            "ground_truth": "Đó là việc chủ động hưởng ứng và ăn mừng với bất kỳ điều gì mang lại cảm xúc tích cực (như niềm vui, sự hân hoan) trong cuộc sống hàng ngày, đồng thời neo giữ những cảm xúc đó lại để lấn át đi các cảm xúc tiêu cực."
-        },
-        {
-            "question": "Trầm cảm ở lứa tuổi vị thành niên có những biểu hiện từ nhẹ đến nặng như thế nào?",
-            "ground_truth": "Ở mức độ nhẹ, các em sống khép kín, không muốn chia sẻ. Trầm trọng hơn là ngại đi học, mất mục tiêu. Nặng nhất là có ý nghĩ tự hại bản thân, khủng hoảng, đóng cửa trái tim và chống đối mọi người xung quanh."
-        },
-        {
-            "question": "Trong quá trình tham vấn tâm lý 1:1 cho vị thành niên, tại sao việc chữa lành mối quan hệ gia đình lại quan trọng?",
-            "ground_truth": "Trẻ vị thành niên rất nhạy cảm với cách hành xử của cha mẹ. Chữa lành mối quan hệ giúp cả hai bên thấu hiểu nhau, giúp cha mẹ tránh chạm vào các 'tử huyệt cảm xúc' của con và tạo ra sự đồng cảm bền chặt."
-        },
-        {
-            "question": "Ba nhóm triệu chứng cốt lõi của bệnh trầm cảm khi bệnh phát triển đầy đủ là gì?",
-            "ground_truth": "Ba nhóm triệu chứng chính bao gồm: cảm xúc bị ức chế (buồn bã, u uất), tư duy bị ức chế (liên tưởng chậm chạp, hoang tưởng bi quan), và hoạt động bị ức chế (nằm im lìm, lờ đờ, hoạt động chậm chạp)."
-        },
-        {
-            "question": "Trong chẩn đoán trầm cảm, trầm cảm nhẹ được xác định dựa trên những tiêu chí nào?",
-            "ground_truth": "Trầm cảm nhẹ được xác định khi có ít nhất 2 triệu chứng đặc trưng (khí sắc buồn, giảm năng lượng, mất hứng thú) và 2 triệu chứng phổ biến, kéo dài tối thiểu 14 ngày, nhưng bệnh nhân vẫn có thể duy trì hoạt động hàng ngày."
         }
     ]
     

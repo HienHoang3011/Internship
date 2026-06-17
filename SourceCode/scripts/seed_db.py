@@ -252,9 +252,18 @@ def seed_lessons():
         
     print(f"Seeded {len(mock_lessons)} lessons successfully!")
 
-if __name__ == '__main__':
+def main():
+    force_seed = '--force' in sys.argv if hasattr(sys, 'argv') else False
+    
+    if not force_seed and User.objects.exists() and Test.objects.exists():
+        print("--- DATABASE ALREADY SEEDED. SKIPPING. (Use --force to override) ---")
+        return
+
     print("--- STARTING DATABASE SEED ---")
     seed_tests()
     seed_users_and_diaries()
     seed_lessons()
     print("--- SEED COMPLETED SUCCESSFULLY ---")
+
+if __name__ == '__main__':
+    main()

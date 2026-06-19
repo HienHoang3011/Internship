@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import './ChatScreen.css';
 
 const ChatScreen = ({
@@ -99,7 +100,9 @@ const ChatScreen = ({
                       <div className="typing-dot"></div>
                     </div>
                   ) : (
-                    <p>{msg.text}</p>
+                    <div className="markdown-content">
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    </div>
                   )}
                 </div>
               </div>

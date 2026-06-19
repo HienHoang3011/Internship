@@ -266,6 +266,23 @@
   padding: 0.5rem 0; /* Bot messages often don't have bubble background in modern UI, just clear text */
 }
 
+.markdown-content p {
+  margin-bottom: 0.75rem;
+}
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+.markdown-content ul, .markdown-content ol {
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+}
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+.markdown-content strong {
+  font-weight: 600;
+}
+
 .gpt-sender-name {
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -299,7 +316,7 @@
 }
 
 .messages-bottom-spacer {
-  height: 120px;
+  height: 20px;
 }
 
 /* Empty State / Greeting */
@@ -359,21 +376,22 @@
 
 /* Input Area */
 .gpt-input-area-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 1rem 2rem 1.5rem;
-  background: linear-gradient(0deg, rgba(255,255,255,1) 70%, rgba(255,255,255,0));
+  background: white;
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
 }
 
 .gpt-input-area-wrapper.centered {
+  position: absolute;
   top: 50%;
   bottom: auto;
+  left: 0;
+  right: 0;
   transform: translateY(-50%);
   background: transparent;
   padding: 0 2rem;

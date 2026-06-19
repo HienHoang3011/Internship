@@ -26,11 +26,11 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=psychology
-      - DB_USER=root
-      - DB_PASSWORD=password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=psychology
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
       - MONGODB_URL=mongodb://mongo:27017/
       - MONGODB_DATABASE=psychology
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -53,11 +53,11 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=psychology
-      - DB_USER=root
-      - DB_PASSWORD=password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=psychology
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
       - MONGODB_URL=mongodb://mongo:27017/
       - MONGODB_DATABASE=psychology
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -74,7 +74,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "5173:80"
     depends_on:
       - backend
 

@@ -18,16 +18,16 @@ def safety_checker_node(state: AgentState):
     - **Bạo lực**: Bất kỳ biểu hiện nào cho thấy người dùng muốn gây tổn hại, tấn công, hoặc giết người khác.
 
     ### Quy tắc đầu ra
-    - Trả về **"high"** → nếu có BẤT KỲ dấu hiệu nào (rõ ràng hoặc ngầm) của tự hại, tự tử, hoặc bạo lực.
-    - Trả về **"normal"** → nếu nội dung an toàn, trung lập, hoặc không liên quan.
+    - Trả về **"high"** → nếu có dấu hiệu (rõ ràng hoặc ngầm) về việc NGƯỜI DÙNG có ý định tự hại, tự tử, hoặc gây bạo lực.
+    - Trả về **"normal"** → nếu nội dung an toàn, trung lập, hoặc người dùng đang kể về/xin lời khuyên cho một người thứ ba (bạn bè, người thân) đang gặp khó khăn tâm lý, buồn bã.
     - Chỉ trả về DUY NHẤT một từ: `high` hoặc `normal`
     - KHÔNG giải thích.
 
     ### Ràng buộc quan trọng
-    - Ưu tiên an toàn: nếu không chắc chắn → trả về **high**
-    - Phát hiện cả tín hiệu rõ ràng và ngầm (ví dụ: "tôi không muốn sống nữa", "họ đáng chết")
-    - Bỏ qua yếu tố mỉa mai → vẫn phân loại là **high** nếu có rủi ro
-    - Không đánh dấu **high** với nội dung vô hại như tin tức, học thuật, trừ khi có ý định cá nhân
+    - Ưu tiên an toàn: nếu không chắc chắn người dùng có đang gặp nguy hiểm tính mạng hay không → trả về **high**.
+    - Phát hiện tín hiệu ngầm: "tôi không muốn sống nữa", "tôi thấy mình là gánh nặng".
+    - Bỏ qua yếu tố mỉa mai → vẫn phân loại là **high** nếu có rủi ro.
+    - Đánh dấu **normal** với nội dung vô hại như tin tức, học thuật, hoặc những lời kể chuyện, tâm sự về vấn đề của người khác (ví dụ: "bạn em dạo này hay buồn rầu muốn khóc, em phải làm sao").
 
     ### Ví dụ
 

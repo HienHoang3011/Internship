@@ -29,6 +29,13 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
+      const role = localStorage.getItem("role");
+      
+      if (role === 'admin' && (!hash || hash === 'home' || hash === 'chat')) {
+        window.location.hash = 'admin_dashboard';
+        return;
+      }
+      
       if (hash) {
         const parts = hash.split('/');
         if (parts[0] === 'faq') {
@@ -41,8 +48,12 @@ function App() {
           setCurrentId(parts.length > 1 ? parts[1] : null);
         }
       } else {
-        setCurrentView('home');
-        setCurrentId(null);
+        if (role === 'admin') {
+          window.location.hash = 'admin_dashboard';
+        } else {
+          setCurrentView('home');
+          setCurrentId(null);
+        }
       }
     };
     handleHashChange();
@@ -114,8 +125,8 @@ function App() {
           data = [{ id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] }];
         }
         setSessions(prevSessions => {
-          const hasTemp = prevSessions.some(s => s.id === 'temp');
-          if (hasTemp) {
+          const hasTemp = prevSessions.some(s => s.id === 'temp') || currentId === 'temp';
+          if (hasTemp && !data.some(s => s.id === 'temp')) {
             return [{ id: 'temp', title: 'Cuộc trò chuyện mới', messages: [] }, ...data];
           }
           return data;
@@ -180,6 +191,7 @@ function App() {
           targetSessionId = newSession.id;
           setActiveSessionId(targetSessionId);
         } else {
+          setIsSending(false);
           return;
         }
       } catch (err) {
@@ -286,7 +298,15 @@ function App() {
 
   useEffect(() => {
     if (messagesEndRef.current && currentView === 'chat') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        const container = messagesEndRef.current.parentElement;
+        if (container) {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 150);
     }
   }, [sessions, activeSessionId, currentView]);
 

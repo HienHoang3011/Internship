@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import './TestViewer.css';
 import gameBg1 from '../assets/game-bg1.jpg';
+import logoWeb from '../assets/logo-web-transparent.png';
 import { apiFetch } from '../utils/api';
 
 const TestViewer = ({ initialId, onBack, handleLogout }) => {
@@ -217,7 +218,7 @@ const TestViewer = ({ initialId, onBack, handleLogout }) => {
             <div className="test-category-box">
               <div className="test-category-header">
                 <h2 className="category-title" style={{ margin: 0 }}>Test tâm lý chuyên sâu</h2>
-                <img src="/src/assets/logo-web-transparent.png" alt="MindCareAI" className="category-logo" />
+                <img src={logoWeb} alt="MindCareAI" className="category-logo" />
               </div>
               {clinicalTests.length > 0 ? (
                 <div className="test-grid">
@@ -248,7 +249,7 @@ const TestViewer = ({ initialId, onBack, handleLogout }) => {
             <div className="test-category-box">
               <div className="test-category-header">
                 <h2 className="category-title" style={{ margin: 0 }}>Trắc nghiệm tính cách</h2>
-                <img src="/src/assets/logo-web-transparent.png" alt="MindCareAI" className="category-logo" />
+                <img src={logoWeb} alt="MindCareAI" className="category-logo" />
               </div>
               {personalityTests.length > 0 ? (
                 <div className="test-grid">

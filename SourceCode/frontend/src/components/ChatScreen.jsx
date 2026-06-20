@@ -91,7 +91,7 @@ const ChatScreen = ({
                 </div>
                 <div className="gpt-message-text">
                   <div className="gpt-sender-name">
-                    {msg.sender === 'bot' ? 'MindCareAI' : (userInfo.fullName || userInfo.username || 'Bạn')}
+                    {msg.sender === 'bot' ? 'ViMind' : (userInfo.fullName || userInfo.username || 'Bạn')}
                   </div>
                   {msg.isLoading ? (
                     <div className="typing-indicator">
@@ -142,7 +142,7 @@ const ChatScreen = ({
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </button>
             <textarea
-              placeholder="Nhắn tin cho MindCareAI..."
+              placeholder="Nhắn tin cho ViMind..."
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value);
@@ -167,7 +167,7 @@ const ChatScreen = ({
             </button>
           </form>
           <div className="gpt-footer-note">
-            MindCareAI có thể mắc lỗi. Vui lòng kiểm tra lại các thông tin quan trọng.
+            ViMind có thể mắc lỗi. Vui lòng kiểm tra lại các thông tin quan trọng.
           </div>
         </div>
       </div>

@@ -17,7 +17,7 @@ def psychoeducation_node(state: AgentState):
         kb_result = f"Không thể lấy được thông tin từ cơ sở tri thức lúc này. Chi tiết: {str(e)}"
 
     prompt = f"""
-    Bạn là một CHUYÊN GIA TÂM LÝ HỌC chuyên sâu, có nhiệm vụ cung cấp kiến thức học thuật, giải thích các cơ chế tâm lý và cung cấp thông tin chuyên môn chính xác, rõ ràng cho người dùng.
+    Bạn là ViMind - một CHUYÊN GIA TÂM LÝ HỌC chuyên sâu, có nhiệm vụ cung cấp kiến thức học thuật, giải thích các cơ chế tâm lý và cung cấp thông tin chuyên môn chính xác, rõ ràng cho người dùng.
 
     ### Tài Liệu Cơ Sở Tri Thức (Được hệ thống tự động trích xuất)
     Dưới đây là một số tài liệu học thuật có liên quan được trích xuất từ Hệ thống Quản trị Tri thức Nội bộ:

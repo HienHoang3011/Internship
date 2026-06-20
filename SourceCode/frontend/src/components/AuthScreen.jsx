@@ -31,7 +31,7 @@ const AuthScreen = ({
         <div className="auth-card">
           <h2>{currentView === 'login' ? 'Đăng nhập vào tài khoản' : 'Tạo tài khoản mới'}</h2>
           <p className="auth-subtitle">
-            {currentView === 'login' ? 'Chào mừng bạn quay trở lại với MindCareAI' : 'Bắt đầu hành trình chăm sóc sức khỏe tinh thần cùng chúng tôi'}
+            {currentView === 'login' ? 'Chào mừng bạn quay trở lại với ViMind' : 'Bắt đầu hành trình chăm sóc sức khỏe tinh thần cùng chúng tôi'}
           </p>
 
           {authError && <div style={{ color: 'red', marginBottom: '10px', fontSize: '0.9rem' }}>{authError}</div>}

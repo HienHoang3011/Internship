@@ -218,7 +218,7 @@ const TestViewer = ({ initialId, onBack, handleLogout }) => {
             <div className="test-category-box">
               <div className="test-category-header">
                 <h2 className="category-title" style={{ margin: 0 }}>Test tâm lý chuyên sâu</h2>
-                <img src={logoWeb} alt="MindCareAI" className="category-logo" />
+                <img src={logoWeb} alt="ViMind" className="category-logo" />
               </div>
               {clinicalTests.length > 0 ? (
                 <div className="test-grid">
@@ -249,7 +249,7 @@ const TestViewer = ({ initialId, onBack, handleLogout }) => {
             <div className="test-category-box">
               <div className="test-category-header">
                 <h2 className="category-title" style={{ margin: 0 }}>Trắc nghiệm tính cách</h2>
-                <img src={logoWeb} alt="MindCareAI" className="category-logo" />
+                <img src={logoWeb} alt="ViMind" className="category-logo" />
               </div>
               {personalityTests.length > 0 ? (
                 <div className="test-grid">
@@ -431,7 +431,7 @@ const TestViewer = ({ initialId, onBack, handleLogout }) => {
           {!aiAnalysis ? (
             <div className="analysis-box">
               <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Khám phá ý nghĩa chuyên sâu</h3>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem' }}>MindCareAI sẽ đọc chi tiết từng lựa chọn của bạn để đưa ra bức tranh toàn cảnh về sức khỏe tinh thần và gợi ý các bước tiếp theo dành riêng cho bạn.</p>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem' }}>ViMind sẽ đọc chi tiết từng lựa chọn của bạn để đưa ra bức tranh toàn cảnh về sức khỏe tinh thần và gợi ý các bước tiếp theo dành riêng cho bạn.</p>
               <button className="btn-primary" onClick={handleAnalyze} disabled={isAnalyzing} style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '12px' }}>
                 {isAnalyzing ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

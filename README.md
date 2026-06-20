@@ -1,14 +1,14 @@
-# Hệ Thống Trợ Lý Ảo Hỗ Trợ Tâm Lý (Psychological Support Chatbot)
+# ViMind - Nền tảng web AI hỗ trợ tham vấn tâm lý sơ cấp
 
-Đây là mã nguồn của hệ thống Chatbot/Trợ lý ảo chuyên biệt về tư vấn và hỗ trợ tâm lý. Dự án ứng dụng sức mạnh của các Mô hình Ngôn ngữ Lớn (LLMs) kết hợp với kiến trúc Agentic workflows (sử dụng LangGraph) để mô phỏng quá trình trị liệu, thấu cảm (empathy) và giáo dục tâm lý (psychoeducation) cho người dùng.
+Đề tài "ViMind" phát triển nền tảng web AI hỗ trợ tham vấn tâm lý sơ cấp 24/7 cho người Việt. Bằng cách ứng dụng kiến trúc Multi-Agent RAG và mô hình LLM tinh chỉnh chuyên biệt để phân rã tác vụ, hệ thống khắc phục triệt để tình trạng cung cấp thông tin sai lệch của AI truyền thống. Mục tiêu cốt lõi là mang đến một công cụ chăm sóc sức khỏe tinh thần an toàn, thấu cảm và chuẩn xác về chuyên môn cho cộng đồng, trường học và doanh nghiệp.
 
 ## 🌟 Công Nghệ Sử Dụng
 
 - **Frontend:** React 19, Vite (JavaScript/JSX).
 - **Backend Core:** Django 5, Django REST Framework.
 - **AI/Agent Layer:** LangChain, LangGraph, Google GenAI, OpenAI. Hệ thống được chia các node cụ thể (như `empathy_node`, `psychoeducation_node`).
-- **Database:** PostgreSQL (dữ liệu quan hệ, người dùng), MongoDB (lưu trữ lịch sử chat/vector nếu có).
-- **Môi trường & Triển khai:** Docker, Docker Compose, `uv` (trình quản lý package Python cực nhanh).
+- **Database:** PostgreSQL (dữ liệu quan hệ, người dùng, các bài test, lịch sử chat), MongoDB (lưu cở sở tri thức, các bài học tâm lý).
+- **Môi trường & Triển khai:** Docker, Docker Compose, `uv` 
 
 ---
 
@@ -31,7 +31,7 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 Đây là cách đơn giản nhất để khởi chạy toàn bộ hệ thống bao gồm cơ sở dữ liệu, backend, agent API và frontend mà không cần phải cài đặt thủ công từng thành phần.
 
 1. **Thiết lập biến môi trường:**
-   Mở thư mục `SourceCode`, copy file mẫu `.env.example` thành file `.env` và điền các API key của bạn (quan trọng nhất là `GOOGLE_API_KEY` và `OPENAI_API_KEY` nếu hệ thống có yêu cầu).
+   Mở thư mục `SourceCode`, copy file mẫu `.env.example` thành file `.env` và điền các API key của bạn .
    ```bash
    cd SourceCode
    cp .env.example .env

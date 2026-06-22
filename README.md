@@ -26,6 +26,15 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 
 ## 🚀 Hướng Dẫn Cài Đặt và Chạy Dự Án
 
+### Bước Chuẩn Bị (Bắt Buộc): Host Mô Hình LLM
+Trước khi chạy ứng dụng, bạn cần cung cấp endpoint mô hình ngôn ngữ (LLM) cho dự án:
+1. Mở notebook `SourceCode/notebook/host_llm_ngrok.ipynb`.
+2. **Khuyến nghị:** Chạy notebook này trên các môi trường đám mây như **Google Colab** hoặc các nền tảng tương tự có hỗ trợ **GPU A100 trở lên** để đảm bảo tốc độ và hiệu năng sinh văn bản tốt nhất cho hệ thống chat và các service khác.
+3. Chạy toàn bộ các cell trong notebook để tải model và khởi chạy server. Sau khi chạy thành công, notebook sẽ cung cấp một đường dẫn public (URL) thông qua ngrok.
+4. Copy URL ngrok đó để cấu hình vào file `.env` ở các bước cài đặt bên dưới.
+
+---
+
 ### Phương pháp 1: Chạy bằng Docker (Khuyên Dùng)
 
 Đây là cách đơn giản nhất để khởi chạy toàn bộ hệ thống bao gồm cơ sở dữ liệu, backend, agent API và frontend mà không cần phải cài đặt thủ công từng thành phần.

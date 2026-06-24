@@ -5,7 +5,13 @@ from bson import ObjectId
 import json
 from app.infra.mongodb_service import MongoDBService
 
-mongo_service = MongoDBService()
+mongo_service = None
+
+def get_mongo_service():
+    global mongo_service
+    if mongo_service is None:
+        mongo_service = MongoDBService()
+    return mongo_service
 
 def convert_object_ids(doc):
     if doc and '_id' in doc:
@@ -17,7 +23,7 @@ class LessonListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        lessons = mongo_service.find_many("lessons")
+        lessons = get_mongo_service().find_many("lessons")
         lessons = [convert_object_ids(l) for l in lessons]
         return Response(lessons)
 
@@ -26,7 +32,7 @@ class LessonListView(APIView):
             return Response({"error": "Unauthorized"}, status=403)
         
         data = request.data
-        inserted_id = mongo_service.insert_one("lessons", data)
+        inserted_id = get_mongo_service().insert_one("lessons", data)
         if inserted_id:
             data['id'] = str(inserted_id)
             if '_id' in data:
@@ -44,7 +50,7 @@ class LessonDetailView(APIView):
         try:
             query = {"_id": ObjectId(pk)}
             update = {"$set": request.data}
-            modified = mongo_service.update_one("lessons", query, update)
+            modified = get_mongo_service().update_one("lessons", query, update)
             if modified:
                 return Response({"status": "updated"})
             return Response({"error": "Not found or no changes"}, status=404)
@@ -56,7 +62,7 @@ class LessonDetailView(APIView):
             return Response({"error": "Unauthorized"}, status=403)
             
         try:
-            deleted = mongo_service.delete_one("lessons", {"_id": ObjectId(pk)})
+            deleted = get_mongo_service().delete_one("lessons", {"_id": ObjectId(pk)})
             if deleted:
                 return Response(status=204)
             return Response({"error": "Not found"}, status=404)

@@ -191,7 +191,7 @@ const DiaryViewer = ({ initialId, onBack, handleLogout }) => {
         <div className="diary-editor" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '2rem', boxSizing: 'border-box', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: '500' }}>
-              {activeDiary ? `Tạo: ${new Date(activeDiary.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })} | Cập nhật: ${new Date(activeDiary.updated_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : `Ngày viết: ${new Date().toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}`}
+              {activeDiary ? `Tạo: ${new Date(activeDiary.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })} | Cập nhật: ${new Date(activeDiary.updated_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}` : `Ngày viết: ${new Date().toLocaleDateString('vi-VN')}`}
             </div>
             <button className="btn-primary" onClick={handleSaveDiary} disabled={!diaryForm.content.trim()} style={{ opacity: diaryForm.content.trim() ? 1 : 0.5, cursor: diaryForm.content.trim() ? 'pointer' : 'not-allowed', padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(27, 122, 138, 0.3)' }}>
               Lưu nhật ký

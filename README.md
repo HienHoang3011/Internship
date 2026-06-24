@@ -19,7 +19,7 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 - Nếu muốn chạy thủ công (Local Development):
   - Python >= 3.11.
   - Node.js (>= 18) và npm.
-  - Công cụ quản lý gói Python `uv`.
+  - Công cụ quản lý gói Python `uv` (Cài đặt nhanh: `pip install uv` hoặc xem [hướng dẫn chính thức](https://docs.astral.sh/uv/getting-started/installation/)).
   - PostgreSQL và MongoDB đang chạy trên máy.
 
 ---
@@ -73,9 +73,12 @@ Dành cho nhà phát triển muốn chỉnh sửa mã nguồn và debug trực t
 **Bước 1: Thiết lập môi trường Python và Backend**
 1. Mở terminal tại thư mục `SourceCode`.
 2. Tạo file `.env` từ `.env.example` (như ở Phương pháp 1).
-3. Sử dụng `uv` để tạo môi trường ảo và cài đặt thư viện nhanh chóng:
+3. Cài đặt `uv` (nếu chưa có) và thiết lập môi trường ảo:
    ```bash
-   # Tạo môi trường ảo và cài thư viện từ pyproject.toml / uv.lock
+   # Cài đặt uv qua pip
+   pip install uv
+   
+   # Tự động tạo môi trường ảo và cài thư viện từ pyproject.toml / uv.lock
    uv sync
    
    # Kích hoạt môi trường ảo:
@@ -86,16 +89,16 @@ Dành cho nhà phát triển muốn chỉnh sửa mã nguồn và debug trực t
    ```
 4. Áp dụng migrations cho database và tạo dữ liệu mẫu:
    ```bash
-   python manage.py migrate
-   python scripts/seed_db.py
+   uv run python manage.py migrate
+   uv run python scripts/seed_db.py
    ```
 5. Chạy Backend server (Django):
    ```bash
-   python manage.py runserver 8000
+   uv run python manage.py runserver 8000
    ```
-6. Mở một terminal mới (nhớ kích hoạt môi trường `.venv`), chạy Agent layer API:
+6. Mở một terminal mới, chạy Agent layer API:
    ```bash
-   python -m app.agents.api
+   uv run python -m app.agents.api
    ```
 
 **Bước 2: Cài đặt và chạy Frontend**

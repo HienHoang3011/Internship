@@ -46,6 +46,7 @@ function App() {
         } else {
           setCurrentView(parts[0]);
           setCurrentId(parts.length > 1 ? parts[1] : null);
+          window.scrollTo(0, 0);
         }
       } else {
         if (role === 'admin') {
@@ -53,6 +54,7 @@ function App() {
         } else {
           setCurrentView('home');
           setCurrentId(null);
+          window.scrollTo(0, 0);
         }
       }
     };
